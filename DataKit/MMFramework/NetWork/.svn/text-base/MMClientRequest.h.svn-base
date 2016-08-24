@@ -1,0 +1,35 @@
+//
+//  MMClientRequest.h
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/23.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+#import "MMClientRequestDelegate.h"
+#import "MMDataParseSuper.h"
+#import "MMClientRequestCallBackDelegate.h"
+
+@interface MMClientRequest : NSObject <MMClientRequestDelegate>
+
+@property (nonatomic, weak) id<MMClientRequestCallBackDelegate> c_delegate;
+
+/**
+ *  请求的方法名
+ */
+@property (nonatomic, readonly, strong) NSString *requestMethodName;
+
+/**
+ *  请求得到的结果，默认空，接口请求正常时，不为空
+ */
+@property (nonatomic, readonly, strong) id responseObject;
+
+/**
+ *  错误结果对象，默认空，接口返回错误时，不为空
+ */
+@property (nonatomic, readonly, strong) NSError *errorObject;
+
+@property (nonatomic, readonly, strong) MMDataParseSuper *superRequest;
+
+@end

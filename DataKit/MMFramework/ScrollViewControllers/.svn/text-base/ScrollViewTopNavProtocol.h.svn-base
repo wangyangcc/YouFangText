@@ -1,0 +1,52 @@
+//
+//  ScrollViewTopNavProtocol.h
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/5.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+
+@protocol ScrollViewVCTopRightProtocol; 
+@class ScrollViewVC;
+@protocol ScrollViewTopNavProtocol <NSObject, UIScrollViewDelegate>
+
+@property (nonatomic, strong) NSMutableArray *navArray;
+
+@property (nonatomic, assign) CGFloat currentIndex;//当前选中的index
+
+//高度
+@property (nonatomic, assign) CGFloat navScreenHeight;
+
+//滑动标题右边是否有按钮
+@property (nonatomic, assign) BOOL isTopRightView;
+
+/**
+ *  父类view
+ */
+@property (nonatomic, weak) ScrollViewVC *scrollViewVC;
+
+//添加导航栏
+- (void) addNavViewWithDefaultIndex:(NSInteger)defaultIndex;
+
+/**
+ *  根据新的nav数组更新
+ *
+ *  @param navArrayTmp 新的 nav数组
+ */
+- (void)updateNavViewWithNavArray:(NSMutableArray *)navArrayTmp;
+
+- (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView
+                         createNewVC:(BOOL)createNewVC;
+
+//移除所有的子view
+- (void)removeAllNavSubViews;
+
+@optional
+
+- (void) addTopRightView:(id<ScrollViewVCTopRightProtocol>)topRightView;
+
+- (void)adjustNavScrollViewContentOffset:(NSInteger)currentPage;
+
+@end

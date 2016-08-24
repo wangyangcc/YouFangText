@@ -1,0 +1,38 @@
+//
+//  UIViewController+Route.h
+//  Garfield-Common
+//
+//  Created by jack zhou on 06/17/14.
+//
+//
+
+#import <UIKit/UIKit.h>
+@interface UIViewController (Route)
+
+/**
+ *  注册路由
+ *
+ *  @param route   路由
+ *  @param handler 要处理的参数
+ */
++ (void)registerRoute:(NSString *)route withHandler:(BOOL(^)(NSDictionary *parameters))handler;
+
+- (NSString *)generateRouteWithStrings:(NSString *)route, ...;
+
+/**
+ *  调用路由
+ *
+ *  @param route      路由
+ *  @param parameters 参数
+ */
+- (void)triggerRoute:(NSString *)route withParameters:(NSDictionary *)parameters;
+
+/**
+ *  调用路由
+ *
+ *  @param route      路由
+ *  @param parameters 参数
+ */
++ (void)triggerRoute:(NSString *)route withParameters:(NSDictionary *)parameters;
+
+@end

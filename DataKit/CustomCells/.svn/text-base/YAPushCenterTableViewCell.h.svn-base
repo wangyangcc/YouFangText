@@ -1,0 +1,25 @@
+//
+//  YAPushCenterTableViewCell.h
+//  YouAsk
+//
+//  Created by wangyangyang on 15/9/8.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+
+@interface YAPushCenterTableViewCell : UITableViewCell
+
+@end
+
+@interface YAPushCenterObject : NSObject
+
+@property (nonatomic, copy) NSString *objectId; /**< 保留参数 */
+
+@property (nonatomic, copy) NSString *imageName;
+
+@property (nonatomic, copy) NSString *title;
+
+@property (nonatomic, strong) NSNumber *unreadCount;
+
+@end

@@ -1,0 +1,91 @@
+//
+//  ScrollViewVC.h
+//  ScrollVCAndNavBar
+//
+//  Created by lcc on 14-3-3.
+//  Copyright (c) 2014年 lcc. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+#import "ScrollViewVCTopRightProtocol.h"
+#import "ScrollViewTopNavProtocol.h"
+
+@protocol ScrollViewVCDelegate;
+
+@interface ScrollViewVC : UIView
+
+@property (nonatomic, strong) NSMutableArray *navArray;
+@property (nonatomic, strong) NSMutableDictionary *vcTypeDictionary;
+@property (nonatomic, strong) NSString *vcString;
+@property (nonatomic, strong) NSString *actionString;
+
+/**
+ *  顶部滑动栏目高度，默认是30
+ */
+@property (nonatomic) CGFloat navScreenHeight;
+
+//实现 ScrollViewVCTopRightProtocol 滑动栏右上角 点击试图
+@property (nonatomic, strong, readonly) id<ScrollViewVCTopRightProtocol> topRightView;
+
+//实现 ScrollViewTopNavProtocol 顶部nav试图
+@property (nonatomic, strong, readonly) id<ScrollViewTopNavProtocol> topNavView;
+
+/**
+ *  一些委托方法
+ */
+@property (nonatomic, weak) id<ScrollViewVCDelegate> s_delegate;
+
+/**
+ *  添加导航栏，此方法应为设置参数后最后调用
+ */
+- (void)addNavView;
+
+/**
+ *  添加导航栏，此方法应为设置参数后最后调用
+ *
+ *  @param defaultIndex 默认的页码index
+ */
+- (void) addNavViewWithDefaultIndex:(NSInteger)defaultIndex;
+
+/**
+ *  根据新的nav数组更新
+ *
+ *  @param navArrayTmp 新的 nav数组
+ */
+- (void)updateNavViewWithNavArray:(NSMutableArray *)navArrayTmp;
+
+- (void)setTopRightProtocolView:(id<ScrollViewVCTopRightProtocol>)topRightView;
+
+- (void)setTopNavProtocolView:(id<ScrollViewTopNavProtocol>)topNavView;
+
+/**
+ *  选择某个index
+ */
+- (void)selectAtIndex:(NSInteger) index;
+
+/**
+ *  刷新vc
+ */
+- (void)updateViewControllerWithIndex:(NSInteger)index;
+
+/**
+ *  状态栏点击事件
+ */
+- (void)statusBarTappedAction;
+
+@end
+
+@protocol ScrollViewVCDelegate <NSObject>
+
+@optional
+
+/**
+ *  栏目切换时候调用
+ *
+ *  @param scrollViewVC scrollViewVC
+ *  @param currentIndex 新的index
+ */
+- (void) scrollViewVCColumnChange:(ScrollViewVC *)scrollViewVC
+                     currentIndex:(NSInteger)currentIndex;
+
+@end

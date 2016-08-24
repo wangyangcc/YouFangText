@@ -1,0 +1,48 @@
+//
+//  YAAskDetailIntroView.h
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/3.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+
+@protocol YAAskDetailIntroViewDelegate;
+@interface YAAskDetailIntroView : UIView
+
+/**
+ *  是否显示更多按钮
+ */
+@property (nonatomic, assign, readonly) BOOL isDisplayMoreButton;
+
+@property (nonatomic, assign) id<YAAskDetailIntroViewDelegate> c_delegate;
+
+/**
+ *  更新内容
+ */
+- (void)updateWithIntroStr:(NSString *)introStr
+                 imagePath:(NSString *)imagePath
+             fullImagePath:(NSString *)fullImagePath
+                 haveImage:(BOOL)haveImage
+               displayMore:(BOOL)displayMore;
+
+/**
+ *  得到高度
+ *
+ *  @param text   文本
+ *  @param isOpen 是否开启
+ *
+ *  @return 高度值
+ */
++ (CGFloat)getAskDetailIntroViewHeightWithText:(NSString *)text
+                                        isOpen:(BOOL)isOpen
+                                   isHaveImage:(BOOL)isHaveImage;
+
+@end
+
+@protocol YAAskDetailIntroViewDelegate <NSObject>
+
+- (void)askDetailIntroViewTaped:(YAAskDetailIntroView *)introView;
+
+@end

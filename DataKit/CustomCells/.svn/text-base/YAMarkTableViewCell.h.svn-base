@@ -1,0 +1,16 @@
+//
+//  YAMarkTableViewCell.h
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/11.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+#import "MMCellProtocol.h"
+
+@interface YAMarkTableViewCell : UITableViewCell <MMCellProtocol>
+
++ (nonnull NSMutableAttributedString *)tagsLabelWithFieldsString:(nullable NSString *)fieldsString;
+
+@end

@@ -1,0 +1,67 @@
+//
+//  YAMyAskTableViewCell.m
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/16.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import "YAMyAskTableViewCell.h"
+#import "YAMeAskObject.h"
+
+@interface YAMyAskTableViewCell ()
+
+@property (weak, nonatomic) IBOutlet UILabel *ui_titleLabel;
+
+@property (weak, nonatomic) IBOutlet UILabel *ui_stateLabel;
+
+@property (weak, nonatomic) IBOutlet UILabel *ui_answerNumberLabel;
+
+@end
+
+@implementation YAMyAskTableViewCell
+
+- (id)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
+{
+    self = [[[NSBundle mainBundle] loadNibNamed:@"YAMyAskTableViewCell" owner:nil options:nil] lastObject];
+    return self;
+}
+
+- (void)awakeFromNib {
+    // Initialization code
+    
+    self.contentView.backgroundColor = [UIColor whiteColor];
+}
+
+- (void)setSelected:(BOOL)selected animated:(BOOL)animated {
+    [super setSelected:selected animated:animated];
+
+    // Configure the view for the selected state
+}
+
+//iOS8 设置cell分隔条
+- (UIEdgeInsets)layoutMargins
+{
+    return UIEdgeInsetsMake(0, 0, 0, 0);
+}
+
+#pragma mark - MMCellProtocol
+
+- (void)setContentWithObject:(id)object AtIndexPath:(NSIndexPath *)indexPath
+{
+    YAMeAskObject *askObject = [object objectAtIndex:indexPath.row];
+    
+    self.ui_titleLabel.text = [NSString stringWithFormat:@"问:%@",askObject.m_content];
+    self.ui_answerNumberLabel.text = [NSString stringWithFormat:@"回答数:%@",[askObject.m_answer_count stringValue]];
+    
+    if (askObject.m_resolved && [askObject.m_resolved integerValue] == 1) {
+        self.ui_stateLabel.textColor = [UIColor colorWithHexString:@"#9B9B9B"];
+        self.ui_stateLabel.text = @"已解决";
+    }
+    else {
+        self.ui_stateLabel.textColor = MMRGBColor(222, 51, 55);
+        self.ui_stateLabel.text = @"未解决";
+    }
+}
+
+@end

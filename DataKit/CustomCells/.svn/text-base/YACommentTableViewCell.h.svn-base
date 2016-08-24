@@ -1,0 +1,25 @@
+//
+//  YACommentTableViewCell.h
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/8.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+
+@protocol YACommentTableViewCellDelegate;
+@interface YACommentTableViewCell : UITableViewCell
+
+@property (nonatomic, weak) id<YACommentTableViewCellDelegate> c_delegate;
+
+@end
+
+@protocol YACommentTableViewCellDelegate <NSObject>
+
+- (void)zanButtonTaped:(NSIndexPath *)indexPath
+            praiseFlag:(NSString *)praiseFlag;
+
+- (void)contentViewTaped:(NSIndexPath *)indexPath;
+
+@end

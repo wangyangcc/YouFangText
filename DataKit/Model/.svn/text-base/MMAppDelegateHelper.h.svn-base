@@ -1,0 +1,88 @@
+//
+//  MMAppDelegateHelper.h
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/23.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+#import "YAUser.h"
+
+/**
+ *  全局的，负责需要序列化的对象的序列化
+ */
+@interface MMAppDelegateHelper : NSObject
+
++ (MMAppDelegateHelper *)shareHelper;
+
+#pragma mark - 用户登录相关
+
+//用户登录相关
+- (YAUser *)currentUser;
+- (NSString *)currentUserId;
+- (void)updateWithUser:(YAUser *)user;
+- (void)userLoginOut:(BOOL)clearViewControllers;
+/**
+ *  清楚试图控制器堆栈，并返回到首页
+ */
+- (void)clearViewControllersToHomeAnimated:(BOOL)animated;
+
+/**
+ *  得到登录用的用户名和密码
+ */
+- (NSArray *)getLoginUserNameAndPs;
+
+/**
+ *  更新用于登录的用户名和密码
+ */
+- (void)updateLoginUserNameAndPsWithName:(NSString *)name
+                           password:(NSString *)password;
+
+/**
+ *  保存用户头像
+ *
+ *  @param imageData 用户头像数据
+ *  @param imagePath 用户头像本地地址
+ */
+- (void)saveUserHeadPhotoWithImageData:(NSData *)imageData
+                             imagePath:(NSString **)imagePath;
+
+
+#pragma mark - 启动接口相关
+
+/**
+ *  是否保存的有登录接口数据
+ *
+ *  @return 结果
+ */
+- (BOOL)isHaveLaunchAccessData;
+
+/**
+ *  保存登录接口数据
+ *
+ *  @param dic 登录接口数据
+ */
+- (void)saveLaunchAccessDataWithDic:(NSDictionary *)dic;
+
+/**
+ *  读取登录接口数据
+ *
+ *  @return 登录接口数据
+ */
+- (NSDictionary *)readLaunchAccessData;
+
+
+/**
+ *  判断是不是在每次启动客户端的时候，已经显示过提示语
+ */
+@property (nonatomic, assign, readonly) BOOL isShowedPromteEveryRuning;
+
+/**
+ *  判断是否需要显示前往pc输入的提示语，回答的时候
+ *
+ *  @return 结果
+ */
+- (BOOL)showPromtWhenAnswer;
+
+@end

@@ -1,0 +1,36 @@
+//
+//  MMDebugMessage.h
+//  YouAsk
+//
+//  Created by wangyangyang on 15/11/17.
+//  Copyright © 2015年 wang yangyang. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+
+@interface MMDebugMessage : NSObject
+
+@property (nonatomic, strong, readonly) NSMutableArray *debugsArray; //** 所有的日志数 */
+
++ (MMDebugMessage *)shareHelper;
+
+/**
+ *  保存日志到本地
+ */
+- (void)saveDebugs;
+
+/**
+ *  发送日志记录
+ */
+- (void)sendDebugs;
+
+/**
+ *  输出单个内容
+ *
+ *  @param content 内容
+ */
+- (void)logWithContent:(NSString *)content;
+
+
+
+@end

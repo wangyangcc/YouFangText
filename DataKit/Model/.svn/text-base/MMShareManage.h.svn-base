@@ -1,0 +1,75 @@
+//
+//  XCShareManage.h
+//
+//
+//  Created by wangyangyang on 14-9-6.
+//  Copyright (c) 2014年 wangyangyang. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+#import "WXApi.h"
+#import "UMSocial.h"
+#import "MTLModel.h"
+#import "MTLJSONAdapter.h"
+
+#define ChannelReportText @"[channel]"
+
+@class MMShareObject;
+
+@protocol MMShareManageDelegate;
+
+@interface MMShareManage : NSObject <UMSocialUIDelegate, WXApiDelegate>
+
++ (MMShareManage *)shareManage;
+
+@property (nonatomic, retain, readonly) MMShareObject *currentObject;
+@property (nonatomic, weak) id<MMShareManageDelegate> c_delegate;
+
+- (UIImage *)defaultIconImage;
+
+- (void)downloadShareWeiboImageWithUrl:(NSString *)shareImageUrl;
+
+- (void)downloadShareWeixinImageWithUrl:(NSString *)shareImageUrl;
+
+- (void)shareWithObject:(MMShareObject *)shareObject;
+
+@end
+
+@protocol MMShareManageDelegate <NSObject>
+
+- (void)shareObjectSucceedWithChannelName:(NSString *)channelName
+                                 shareUrl:(NSString *)shareUrl;
+
+@end
+
+@class MMSharePlatformObject;
+
+@interface MMShareObject : NSObject
+
+@property (nonatomic, copy) NSString *shareQuestionId;/**< 分享的问题id 可能为nil */
+
+@property (nonatomic, copy) NSString *shareAnswerId;/**< 分享的回答id 可能为nil */
+
+@property (nonatomic, copy) NSString *shareUserId;/**< 分享的用户id 可能为nil */
+
+@property (nonatomic, copy) NSString *shareId;/**< 分享id */
+
+@property (nonatomic, strong) MMSharePlatformObject *shareWeiboObject;/**< 分享到微博的对象 */
+
+@property (nonatomic, strong) MMSharePlatformObject *shareWeixinObject;/**< 分享到微信的对象 */
+
+@end
+
+@interface MMSharePlatformObject : MTLModel <MTLJSONSerializing>
+
+@property (nonatomic, copy) NSString *shareType;/**< 区分一个平台下面的不同场景，比如朋友圈和好友 */
+
+@property (nonatomic, copy) NSString *title;/**< 标题 */
+
+@property (nonatomic, copy) NSString *describe; /**< 描述 */
+
+@property (nonatomic, copy) NSString *imageUrl; /**< 图片地址 */
+
+@property (nonatomic, copy) NSString *shareUrl; /**< 分享的链接地址 */
+
+@end

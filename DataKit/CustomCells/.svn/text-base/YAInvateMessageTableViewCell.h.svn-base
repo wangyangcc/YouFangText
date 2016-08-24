@@ -1,0 +1,31 @@
+//
+//  YAInvateMessageTableViewCell.h
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/15.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+#import "MMCellProtocol.h"
+
+@protocol YAInvateMessageTableViewCellDelegate;
+@interface YAInvateMessageTableViewCell : UITableViewCell <MMCellProtocol>
+
+@property (nonatomic, weak) id<YAInvateMessageTableViewCellDelegate> c_delegate;
+
+@end
+
+@protocol YAInvateMessageTableViewCellDelegate <NSObject>
+
+/**
+ *  稍后回答点击回调
+ */
+- (void)answerAwaitTaped:(NSIndexPath *)indexPath;
+
+/**
+ *  立刻回答点击回调
+ */
+- (void)answerNowTaped:(NSIndexPath *)indexPath;
+
+@end

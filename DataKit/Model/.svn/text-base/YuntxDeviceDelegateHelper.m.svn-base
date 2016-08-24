@@ -1,0 +1,141 @@
+//
+//  YuntxDeviceDelegateHelper.m
+//  YouAsk
+//
+//  Created by wangyangyang on 15/7/23.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import "YuntxDeviceDelegateHelper.h"
+#import "YAUser.h"
+
+@implementation YuntxDeviceDelegateHelper
+
+/**
+ *@brief 获取DeviceDelegateHelper单例句柄
+ */
++ (YuntxDeviceDelegateHelper*)sharedInstance
+{
+    static YuntxDeviceDelegateHelper *devicedelegatehelper;
+    static dispatch_once_t devicedelegatehelperonce;
+    dispatch_once(&devicedelegatehelperonce, ^{
+        devicedelegatehelper = [[YuntxDeviceDelegateHelper alloc] init];
+    });
+    return devicedelegatehelper;
+}
+
+/**
+ *  登录云通讯
+ *
+ *  @param dictionary 启动接口数据
+ *  @param user       用户信息
+ */
+- (void)loginWithLaunchingAccessDictionary:(NSDictionary *)dictionary
+                               currentUser:(YAUser *)user
+{
+    //默认模式、只对AppKey、AppToken和userName鉴权
+    ECLoginInfo * loginInfo = [[ECLoginInfo alloc] init];
+    loginInfo.username = [NSString stringWithFormat:@"%@",user.ytx_account_sid];//用户登录app的用户id即可。
+    loginInfo.appKey = [NSString stringWithFormat:@"%@",dictionary[@"ytx_app_id"]];
+    loginInfo.appToken = [NSString stringWithFormat:@"%@",dictionary[@"ytx_app_token"]];
+    loginInfo.authType = LoginAuthType_NormalAuth;//默认方式登录
+    loginInfo.mode = LoginMode_InputPassword;
+    [[ECDevice sharedInstance] login:loginInfo completion:^(ECError *error){
+        if (error.errorCode == ECErrorType_NoError) {
+            //登录成功
+        }else{
+            //登录失败
+        }
+    }];
+}
+
+/**
+ @brief 连接状态接口
+ @discussion 监听与服务器的连接状态 V5.0版本接口
+ @param state 连接的状态
+ @param error 错误原因值
+ */
+-(void)onConnectState:(ECConnectState)state  failed:(ECError*)error
+{
+    switch (state) {
+        case State_ConnectSuccess:
+            //连接成功
+            break;
+        case State_Connecting:
+            //连接中;
+            break;
+        case State_ConnectFailed:
+            //与服务器断开连接
+            break;
+        default:
+            break;
+    }
+}
+
+/**
+ @brief 个人信息版本号
+ @param version服务器上的个人信息版本号
+ */
+-(void)onServicePersonVersion:(unsigned long long)version
+{
+}
+
+/**
+ @brief 接收即时消息代理函数
+ @param message 接收的消息
+ */
+-(void)onReceiveMessage:(ECMessage*)message
+{
+}
+
+/**
+ @brief 离线消息数
+ @param count 消息数
+ */
+-(void) onOfflineMessageCount:(NSUInteger)count
+{
+}
+
+/**
+ @brief 需要获取的消息数
+ @return 消息数 -1:全部获取 0:不获取
+ */
+-(NSInteger) onGetOfflineMessage
+{
+    return -1;
+}
+
+/**
+ @brief 接收离线消息代理函数
+ @param message 接收的消息
+ */
+-(void) onReceiveOfflineMessage:(ECMessage*)message
+{
+}
+
+/**
+ @brief 离线消息接收是否完成
+ @param isCompletion YES:拉取完成 NO:拉取未完成(拉取消息失败)
+ */
+-(void) onReceiveOfflineCompletion:(BOOL)isCompletion
+{
+}
+/**
+ @brief 客户端录音振幅代理函数
+ @param amplitude 录音振幅
+ */
+-(void)onRecordingAmplitude:(double) amplitude
+{
+}
+
+/**
+ @brief 接收群组相关消息
+ @discussion 参数要根据消息的类型，转成相关的消息类；
+ 解散群组、收到邀请、申请加入、退出群组、有人加入、移除成员等消息
+ @param groupMsg 群组消息
+ */
+-(void)onReceiveGroupNoticeMessage:(ECGroupNoticeMessage *)groupMsg
+{
+}
+
+@end

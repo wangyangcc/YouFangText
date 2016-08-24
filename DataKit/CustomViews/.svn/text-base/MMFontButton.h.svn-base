@@ -1,0 +1,15 @@
+//
+//  MMFontButton.h
+//  iOS8Project
+//
+//  Created by LDhai on 15/4/4.
+//  Copyright (c) 2015年 LDhai. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+
+@interface MMFontButton : UIButton
+
+@property (strong, nonatomic) UIFont *mmButtonTitleFont;
+
+@end

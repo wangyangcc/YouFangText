@@ -1,0 +1,125 @@
+//
+//  MMDebugMessage.m
+//  YouAsk
+//
+//  Created by wangyangyang on 15/11/17.
+//  Copyright © 2015年 wang yangyang. All rights reserved.
+//
+
+#import "MMDebugMessage.h"
+#import "MMAppDelegateHelper.h"
+#import "JSONKit.h"
+#import "CCClientRequest.h"
+#import "NSString+extras.h"
+
+@interface MMDebugMessage () <MMClientRequestCallBackDelegate>
+
+@property (nonatomic, strong) NSMutableArray *debugsArray; //** 所有的日志数 */
+
+@property (nonatomic, strong) CCClientRequest *clientRequest;
+
+@end
+
+@implementation MMDebugMessage
+
++ (MMDebugMessage *)shareHelper
+{
+    static MMDebugMessage *helper;
+    static dispatch_once_t onece_t_p;
+    dispatch_once(&onece_t_p, ^{
+        helper = [[MMDebugMessage alloc] init];
+    });
+    return helper;
+}
+
+#pragma mark - getters and setters
+
+- (NSMutableArray *)debugsArray
+{
+    if (_debugsArray == nil) {
+        _debugsArray = [NSMutableArray array];
+    }
+    return _debugsArray;
+}
+
+- (CCClientRequest *)clientRequest
+{
+    if (_clientRequest == nil) {
+        _clientRequest = [CCClientRequest new];
+        _clientRequest.c_delegate = self;
+    }
+    return _clientRequest;
+}
+
+- (NSString *)savePath
+{
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory,NSUserDomainMask, YES);
+    return [[paths objectAtIndex:0] stringByAppendingPathComponent:[@"DebugsMessage" stringFromMD5]];
+}
+
+/**
+ *  保存日志到本地
+ */
+- (void)saveDebugs
+{
+    [self.debugsArray writeToFile:[self savePath] atomically:NO];
+}
+
+/**
+ *  发送日志记录
+ */
+- (void)sendDebugs
+{
+    if ([self.debugsArray count] == 0) {
+        return;
+    }
+    @try {
+        [self.clientRequest deviceLogWithDebugsMessage:[self.debugsArray JSONString]];
+    }
+    @catch (NSException *exception) {
+        
+    }
+}
+
+/**
+ *  输出单个内容
+ *
+ *  @param content 内容
+ */
+- (void)logWithContent:(NSString *)content
+{
+    if (content == nil) {
+        return;
+    }
+#ifdef DEBUG
+    NSLog(@"MMDebugMessage---%@",content);
+#endif
+    NSString *userId = [[MMAppDelegateHelper shareHelper] currentUserId];
+    
+    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+    [dateFormatter setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
+    
+    NSString *time = [dateFormatter stringFromDate:[NSDate date]];
+    
+    NSDictionary *logDic = @{@"device_time":time, @"user_id":userId?:@"0", @"content":content};
+    @synchronized(self) {
+        [self.debugsArray addObject:logDic];
+    }
+}
+
+#pragma mark - MMClientRequestCallBackDelegate
+
+- (void)requestDidSuccessCallBack:(CCClientRequest *)clientRequest
+{
+    @synchronized(self) {
+        [self.debugsArray removeAllObjects];
+    }
+    self.clientRequest = nil;
+}
+
+- (void)requestDidFailCallBack:(CCClientRequest *)clientRequest
+{
+    self.clientRequest = nil;
+}
+
+@end

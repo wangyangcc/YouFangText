@@ -1,0 +1,32 @@
+//
+//  YAAskTableViewCell.h
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/1.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+#import "MMCellProtocol.h"
+
+@protocol YAAskTableViewCellDelegate;
+
+@interface YAAskTableViewCell : UITableViewCell <MMCellProtocol>
+
+@property (nonatomic, weak) id<YAAskTableViewCellDelegate> c_delegate;
+
+@end
+
+@protocol YAAskTableViewCellDelegate <NSObject>
+
+/**
+ *  同问点击回调
+ */
+- (void)togetherAskButtonTaped:(NSIndexPath *)indexPath;
+
+/**
+ *  立刻回答点击回调
+ */
+- (void)answerNowButtonTaped:(NSIndexPath *)indexPath;
+
+@end

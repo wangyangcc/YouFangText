@@ -1,0 +1,21 @@
+//
+//  YAGeneralTableViewCell.m
+//  YouAsk
+//
+//  Created by wangyangyang on 15/5/26.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import "YAGeneralTableViewCell.h"
+
+@implementation YAGeneralTableViewCell
+
+#pragma mark -
+#pragma mark - MMCellProtocol  <子类继承>
+
+- (void)setContentWithObject:(id)object AtIndexPath:(NSIndexPath *)indexPath
+{
+
+}
+
+@end

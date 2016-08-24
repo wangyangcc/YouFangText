@@ -1,0 +1,185 @@
+//
+//  CommonRoute.h
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/25.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#ifndef YouAsk_CommonRoute_h
+#define YouAsk_CommonRoute_h
+
+// example : [self triggerRoute:[self generateRouteWithStrings:@"",nil] withParameters:nil];
+
+/**
+ * 打开问题详情页
+ */
+#define OPEN_QUESTION_DETAIL_PAGE @"/OPEN_QUESTION_DETAIL_PAGE"
+
+/**
+ *  消息中心
+ */
+#define OPEN_MESSAGE_CENTER_PAGE @"/OPEN_MESSAGE_CENTER_PAGE"
+
+/**
+ *  0-系统通知 1-消息 7-打赏 界面
+ */
+#define OPEN_MESSAGE_NOTIFICATIONLIST_PAGE @"/OPEN_MESSAGE_NOTIFICATIONLIST_PAGE"
+
+/**
+ *  用户中心，对内
+ */
+#define OPEN_MYPERSON_CENTER_PAGE @"/OPEN_MYPERSON_CENTER_PAGE"
+
+/**
+ *  回答详情
+ */
+#define OPEN_ANSWER_DETAIL_PAGE @"/OPEN_ANSWER_DETAIL_PAGE"
+
+/**
+ *  追问
+ */
+#define OPEN_CONTINUEASK_PAGE @"/OPEN_CONTINUEASK_PAGE"
+
+/**
+ *  添加回答
+ */
+#define OPEN_ADDANSWER_PAGE @"/OPEN_ADDANSWER_PAGE"
+
+/**
+ *  标签详情
+ */
+#define OPEN_MARKDETAIL_PAGE @"/OPEN_MARKDETAIL_PAGE"
+
+/**
+ *  添加标签
+ */
+#define OPEN_ADDMARKD_PAGE @"/OPEN_ADDMARKD_PAGE"
+
+/**
+ *  评论列表
+ */
+#define OPEN_COMMENTLIST_PAGE @"/OPEN_COMMENTLIST_PAGE"
+
+/**
+ *  邀请好友界面
+ */
+#define OPEN_INVITEFRIEND_PAGE @"/OPEN_INVITEFRIEND_PAGE"
+
+/**
+ *  举报评论
+ */
+#define OPEN_REPORTCOMMENT_PAGE @"/OPEN_REPORTCOMMENT_PAGE"
+
+/**
+ *  提问成功后 邀请好友的等待界面
+ */
+#define OPEN_INVITELOADING_PAGE @"/OPEN_INVITELOADING_PAGE"
+
+/**
+ *  提问成功后 邀请好友的列表界面
+ */
+#define OPEN_INVITEUSERLIST_PAGE @"/OPEN_INVITEUSERLIST_PAGE"
+
+/**
+ *  提问成功后 没有邀请到好友的界面
+ */
+#define OPEN_INVITEFAILED_PAGE @"/OPEN_INVITEFAILED_PAGE"
+
+
+/**
+ *  打开他的用户主页
+ */
+#define OPEN_HECENTER_PAGE @"/OPEN_HECENTER_PAGE"
+
+/**
+ *  等待回答
+ */
+#define OPEN_AWAITANSWER_PAGE @"/OPEN_AWAITANSWER_PAGE"
+
+/**
+ *  通用的列表
+ */
+#define OPEN_GENERALLIST_PAGE @"/OPEN_GENERALLIST_PAGE"
+
+/**
+ *  自己的关注信息
+ */
+#define OPEN_USERFOCUS_PAGE @"/OPEN_USERFOCUS_PAGE"
+
+/**
+ *  用户资料编辑
+ */
+#define OPEN_USERINFOEDIT_PAGE @"/OPEN_USERINFOEDIT_PAGE"
+
+/**
+ *  城市列表
+ */
+#define OPEN_CITYLIST_PAGE @"/OPEN_CITYLIST_PAGE"
+
+/**
+ *  编辑标签
+ */
+#define OPEN_EDITFIELD_PAGE @"/OPEN_EDITFIELD_PAGE"
+
+/**
+ *  编辑档期
+ */
+#define OPEN_EDITUSERDATE_PAGE @"/OPEN_EDITUSERDATE_PAGE"
+
+/**
+ *  用户登录界面
+ */
+#define OPEN_USERLOGIN_PAGE @"/OPEN_USERLOGIN_PAGE"
+
+/**
+ *  搜索用户
+ */
+#define OPEN_SEARCHUSER_PAGE @"/OPEN_SEARCHUSER_PAGE"
+
+/**
+ *  追问回复
+ */
+#define OPEN_SEEKREPLY_PAGE @"/OPEN_SEEKREPLY_PAGE"
+
+/**
+ *  一般的外链界面
+ */
+#define OPEN_OUTLINKNORMAL_PAGE @"/OPEN_OUTLINKNORMAL_PAGE"
+
+/**
+ *  认证的外链界面
+ */
+#define OPEN_OUTLINKAPPROVE_PAGE @"/OPEN_OUTLINKAPPROVE_PAGE"
+
+/**
+ *  图片查看
+ */
+#define OPEN_PHOTOBROWSE_PAGE @"/OPEN_PHOTOBROWSE_PAGE"
+
+/**
+ *  聊天
+ */
+#define OPEN_CHATDETAIL_PAGE @"/OPEN_CHATDETAIL_PAGE"
+
+/**
+ *  群组设置
+ */
+#define OPEN_GROUPSETTING_PAGE @"/OPEN_GROUPSETTING_PAGE"
+
+/**
+ *  设置群组名字
+ */
+#define OPEN_SETGROUPNAME_PAGE @"/OPEN_SETGROUPNAME_PAGE"
+
+/**
+ *  账号绑定界面
+ */
+#define OPEN_ACCOUNTBINDING_PAGE @"/OPEN_ACCOUNTBINDING_PAGE"
+
+/**
+ *  邀请消息界面
+ */
+#define OPEN_INVATEMESSAGE_PAGE @"OPEN_INVATEMESSAGE_PAGE"
+
+#endif

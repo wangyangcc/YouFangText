@@ -1,0 +1,41 @@
+//
+//  YABadgeNumberView.h
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/3.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+
+typedef NS_ENUM(NSUInteger, YABadgeNumberState) {
+    YABadgeNumberStateOne = 1,
+    YABadgeNumberStateTwo = 2,
+    YABadgeNumberStateThree = 3,
+};
+
+@interface YABadgeNumberView : UIView
+
+@property (nonatomic, readonly, assign) YABadgeNumberState numberState;
+/**
+ *  badge 图片
+ */
+@property (nonatomic, strong) NSArray *badgeImages;
+/**
+ *  badge 图片大小
+ */
+@property (nonatomic, strong) NSArray *badgeSizes;
+
+/**
+ *  数字font
+ */
+@property (nonatomic, strong) UIFont *numberFont;
+
+/**
+ *  ... 的顶部约束值
+ */
+@property (nonatomic, assign) CGFloat numberLabelTopConstant;
+
+- (void)updateBadgeWithNumber:(NSInteger)number;
+
+@end

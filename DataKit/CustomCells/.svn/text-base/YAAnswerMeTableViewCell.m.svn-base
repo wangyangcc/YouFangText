@@ -1,0 +1,107 @@
+//
+//  YAAnswerMeTableViewCell.m
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/3.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import "YAAnswerMeTableViewCell.h"
+#import "YABadgeNumberView.h"
+#import "YANeedAnswerObject.h"
+
+@implementation YAAnswerMeTableViewCell
+{
+    UILabel *titleLabel;
+    
+    UILabel *answerLabel;
+    
+    YABadgeNumberView *badgeNumberView;
+}
+
+- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
+{
+    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
+    if (self) {
+        self.backgroundColor = MMRGBColor(244, 244, 246);
+        
+        UIView *allView = [[UIView alloc] init];
+        allView.backgroundColor = [UIColor whiteColor];
+        allView.clipsToBounds = NO;
+        [self.contentView addSubview:allView];
+        [allView autoPinEdgesToSuperviewEdgesWithInsets:UIEdgeInsetsMake(10, 13, 5, 13)];
+        
+        titleLabel = [[UILabel alloc] initWithFrame:CGRectZero];
+        titleLabel.backgroundColor = [UIColor whiteColor];
+        titleLabel.numberOfLines = 0;
+        [allView addSubview:titleLabel];
+        [titleLabel autoPinEdgesToSuperviewEdgesWithInsets:UIEdgeInsetsMake(15, 13, 50, 13)];
+        
+        answerLabel = [[UILabel alloc] initWithFrame:CGRectZero];
+        answerLabel.backgroundColor = [UIColor whiteColor];
+        [allView addSubview:answerLabel];
+        [answerLabel autoSetDimension:ALDimensionHeight toSize:21];
+        [answerLabel autoPinEdgeToSuperviewEdge:ALEdgeLeading withInset:13];
+        [answerLabel autoPinEdgeToSuperviewEdge:ALEdgeTrailing withInset:13];
+        [answerLabel autoPinEdgeToSuperviewEdge:ALEdgeBottom withInset:15];
+        
+        badgeNumberView = [[YABadgeNumberView alloc] initWithFrame:CGRectZero];
+        badgeNumberView.badgeImages = @[@"img_bubble_1",@"img_bubble_2",@"img_bubble_3"];
+        badgeNumberView.badgeSizes = @[[NSValue valueWithCGSize:CGSizeMake(17, 17)],
+                                        [NSValue valueWithCGSize:CGSizeMake(22, 17)],
+                                         [NSValue valueWithCGSize:CGSizeMake(27, 17)]];
+        badgeNumberView.numberFont = [UIFont systemFontOfSize:11];
+        badgeNumberView.numberLabelTopConstant = -7;
+        [allView addSubview:badgeNumberView];   
+        [badgeNumberView autoPinEdgeToSuperviewEdge:ALEdgeTop withInset:-5];
+        [badgeNumberView autoPinEdgeToSuperviewEdge:ALEdgeTrailing withInset:-5];
+    }
+    return self;
+}
+
+- (void)awakeFromNib {
+    // Initialization code
+}
+
+- (void)setSelected:(BOOL)selected animated:(BOOL)animated {
+    [super setSelected:selected animated:animated];
+
+    // Configure the view for the selected state
+}
+
+#pragma mark - Private method
+
+- (NSMutableAttributedString *)answerLabelContentWithNameStr:(NSString *)nameStr
+                                            manNum:(NSInteger)manNum
+{
+    nameStr = nameStr?nameStr:@"";
+    NSString *firstString = nil;
+    if (manNum > 3) {
+        firstString = [NSString stringWithFormat:@"%@等%ld人",nameStr,(long)manNum];
+    }
+    else {
+        firstString = nameStr;
+    }
+    NSString *secondString = @"回答了你";
+    NSString *allString = [NSString stringWithFormat:@"%@%@",firstString,secondString];
+    
+    NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:allString];
+    [attributedString addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:14] range:NSMakeRange(0, allString.length)];
+    [attributedString addAttribute:NSForegroundColorAttributeName value:[UIColor colorWithHexString:@"#2aa3ec"] range:NSMakeRange(0, firstString.length)];
+    [attributedString addAttribute:NSForegroundColorAttributeName value:[UIColor colorWithHexString:@"#7d7d7d"] range:NSMakeRange(firstString.length, secondString.length)];
+    return attributedString;
+}
+
+#pragma mark - MMCellProtocol
+
+- (void)setContentWithObject:(id)object AtIndexPath:(NSIndexPath *)indexPath
+{
+    self.selectionStyle = UITableViewCellSelectionStyleNone;
+    
+    YANeedAnswerObject *answerObject = [object objectAtIndex:indexPath.row];
+    titleLabel.text = [NSString stringWithFormat:@"原问题:%@",answerObject.n_content];
+    answerLabel.attributedText = [self answerLabelContentWithNameStr:answerObject.n_answer_users manNum:[answerObject.n_answer_count integerValue]];
+    [badgeNumberView updateBadgeWithNumber:[answerObject.n_answer_count integerValue]];
+}
+
+@end

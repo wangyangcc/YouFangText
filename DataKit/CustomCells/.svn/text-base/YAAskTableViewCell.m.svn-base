@@ -1,0 +1,174 @@
+//
+//  YAAskTableViewCell.m
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/1.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import "YAAskTableViewCell.h"
+#import "YAHeadImageView.h"
+#import "YAQuestionObject.h"
+
+@interface YAAskTableViewCell ()
+
+/**
+ *  所有view的父视图
+ */
+@property (weak, nonatomic) IBOutlet UIView *ui_allViewBl;
+@property (weak, nonatomic) IBOutlet NSLayoutConstraint *ui_allViewBlTopConstraints;
+
+@property (weak, nonatomic) IBOutlet YAHeadImageView *ui_headImage;
+
+@property (weak, nonatomic) IBOutlet UILabel *ui_nameLabel; /**< 名字标签 */
+@property (weak, nonatomic) IBOutlet UILabel *ui_timeLabel; /**< 时间标签 */
+@property (weak, nonatomic) IBOutlet UILabel *ui_companyLabel; /**< 单位地址标签 */
+
+@property (weak, nonatomic) IBOutlet UIImageView *ui_answerLineImage; /**< 回答分割线 */
+@property (weak, nonatomic) IBOutlet UILabel *ui_questionLabel; /**< 问题内容 */
+@property (weak, nonatomic) IBOutlet NSLayoutConstraint *ui_questionLabelHeightConstraint; /**< 问题内容高度约束 */
+@property (weak, nonatomic) IBOutlet UILabel *ui_answerLabel; /**< 回答内容 */
+@property (weak, nonatomic) IBOutlet NSLayoutConstraint *ui_answerLabelHeightConstraint;
+
+@property (weak, nonatomic) IBOutlet UILabel *ui_attentionNumberLabel; /**< 关注数量标签 */
+@property (weak, nonatomic) IBOutlet UILabel *ui_answerNumberLabel; /**< 回答数量标签 */
+
+@property (weak, nonatomic) IBOutlet NSLayoutConstraint *ui_lineHeightConstraint;
+@property (weak, nonatomic) IBOutlet NSLayoutConstraint *ui_lineHeightConstraintTwo;
+
+@property (nonatomic, strong) NSIndexPath *currentIndexPath;
+
+@end
+
+@implementation YAAskTableViewCell
+
+- (id)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
+{
+    self = [[[NSBundle mainBundle] loadNibNamed:@"YAAskTableViewCell" owner:nil options:nil] lastObject];
+    return self;
+}
+
+- (void)awakeFromNib {
+    // Initialization code
+    self.backgroundColor = MMRGBColor(244, 244, 246);
+    self.ui_lineHeightConstraint.constant = 0.5f;
+    self.ui_lineHeightConstraintTwo.constant = 0.5f;
+    self.ui_allViewBl.backgroundColor = [UIColor whiteColor];
+    
+    self.ui_headImage.verifiedTypeImage = @"img_userVipSmall";
+    self.ui_headImage.shadeImageName = @"img_head_homeSmall";
+    self.ui_headImage.shadeHighlightedImageName = @"img_head_homeSmall_press";
+    
+}
+
+- (void)setSelected:(BOOL)selected animated:(BOOL)animated {
+    [super setSelected:selected animated:animated];
+    // Configure the view for the selected state
+}
+
+//iOS8 设置cell分隔条
+- (UIEdgeInsets)layoutMargins
+{
+    return UIEdgeInsetsZero;
+}
+
+#pragma mark - MMCellProtocol
+
+- (void)setContentWithObject:(id)object AtIndexPath:(NSIndexPath *)indexPath
+{
+    YAQuestionObject *cellObj = [object objectAtIndex:indexPath.row];
+    self.currentIndexPath = indexPath;
+    //调整整个view的起始位置，第一行从0，其余从10Util
+    if (IOS8AFTER) {
+        self.ui_allViewBlTopConstraints.constant = (indexPath.row == 0 ? -4 : 2);
+    }
+    else {
+        self.ui_allViewBlTopConstraints.constant = (indexPath.row == 0 ? 0 : 10);
+    }
+    
+    [self.ui_headImage updateWithImagePath:cellObj.q_head_photo
+                                    userId:cellObj.q_create_user
+                              verifiedType:cellObj.q_verified_type];
+    
+    self.ui_nameLabel.text = cellObj.q_user_name;
+    self.ui_timeLabel.text = cellObj.q_update_time;
+    self.ui_companyLabel.text = cellObj.q_user_desc;
+    self.ui_questionLabel.attributedText = [self questionContentWithTitleStr:cellObj.q_content];
+    self.ui_questionLabelHeightConstraint.constant = cellObj.questionTextHeight;
+    
+    //关注数 和 回答数
+    self.ui_attentionNumberLabel.text = [NSString stringWithFormat:@"%ld人关注",(long)[cellObj.q_togetherAsk_count integerValue]];
+    self.ui_answerNumberLabel.text = [NSString stringWithFormat:@"%ld个回答",(long)[cellObj.q_answer_count integerValue]];
+    //end
+    
+    //判断有没有要显示问题
+    if (cellObj.q_answer_id && [cellObj.q_answer_id integerValue] > 0) {
+        self.ui_answerLineImage.hidden = NO;
+        self.ui_answerLabel.hidden = NO;
+        self.ui_answerLabelHeightConstraint.constant = cellObj.answerTextHeight + 2;
+        self.ui_answerLabel.attributedText = [self answerContentWithUserName:cellObj.q_answer_user_name content:cellObj.q_answer_content];
+    }
+    else {
+        self.ui_answerLineImage.hidden = YES;
+        self.ui_answerLabelHeightConstraint.constant = 0.0f;
+        self.ui_answerLabel.attributedText = nil;
+        self.ui_answerLabel.hidden = YES;
+    }
+    //end
+}
+
+- (NSMutableAttributedString *)questionContentWithTitleStr:(NSString *)titleStr
+{
+    NSString *allString = [NSString stringWithFormat:@"%@",titleStr?:@""];
+    
+    NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:allString];
+    [attributedString addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:16] range:NSMakeRange(0, allString.length)];
+    [attributedString addAttribute:NSForegroundColorAttributeName value:[UIColor colorWithHexString:@"#282828"] range:NSMakeRange(0, allString.length)];
+    
+    //设置 文本的行间距
+    NSMutableParagraphStyle *paragraphStyle = [NSMutableParagraphStyle new];
+    paragraphStyle.lineSpacing = 4;
+    [attributedString addAttribute:NSParagraphStyleAttributeName
+                             value:paragraphStyle
+                             range:NSMakeRange(0, attributedString.length)];
+    //end
+    return attributedString;
+}
+
+- (NSMutableAttributedString *)answerContentWithUserName:(NSString *)nameStr
+                                                 content:(NSString *)content
+{
+    NSString *firstString = [NSString stringWithFormat:@"%@：",nameStr?:@""];
+    NSString *secondString = content?:@"";
+    NSString *allString = [NSString stringWithFormat:@"%@%@",firstString,secondString];
+    
+    NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:allString];
+    [attributedString addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:14] range:NSMakeRange(0, allString.length)];
+    [attributedString addAttribute:NSForegroundColorAttributeName value:[UIColor colorWithHexString:@"#2AA3EC"] range:NSMakeRange(0, firstString.length)];
+    [attributedString addAttribute:NSForegroundColorAttributeName value:MMRGBColor(49, 49, 49) range:NSMakeRange(firstString.length, secondString.length)];
+    
+    //设置 文本的行间距
+    NSMutableParagraphStyle *paragraphStyle = [NSMutableParagraphStyle new];
+    paragraphStyle.lineSpacing = 4;
+    paragraphStyle.lineBreakMode = NSLineBreakByTruncatingTail;
+    [attributedString addAttribute:NSParagraphStyleAttributeName
+                             value:paragraphStyle
+                             range:NSMakeRange(0, attributedString.length)];
+    //end
+    return attributedString;
+}
+
+- (void)layoutSubviews
+{
+    [super layoutSubviews];
+    // Do we have a selected background view?
+    if (self.selectedBackgroundView && self.currentIndexPath.row != 0) { //自定义高亮试图的frame
+        // YES: So adjust the frame for that:
+        CGRect selectedBackgroundViewFrame = self.selectedBackgroundView.frame;
+        selectedBackgroundViewFrame.origin.y = 10;
+        selectedBackgroundViewFrame.size.height -= 10;
+        self.selectedBackgroundView.frame = selectedBackgroundViewFrame;
+    }
+}
+
+@end

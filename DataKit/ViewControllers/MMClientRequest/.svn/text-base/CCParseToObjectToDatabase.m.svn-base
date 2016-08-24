@@ -1,0 +1,586 @@
+
+//
+//  ParseToObjectToDatabase.m
+//  NetAccessShengji
+//
+//  Created by lcc on 13-11-1.
+//  Copyright (c) 2013年 lcc. All rights reserved.
+//
+
+#import "CCParseToObjectToDatabase.h"
+#import "JSONKit.h"
+#import "FMDBManage.h"
+#import "MMDataParseSuper.h"
+#import "NSData+Base64.h"
+#import "MTLModel.h"
+#import "MTLJSONAdapter.h"
+#import "YAInvitePersonObject.h"
+#import "YAUserAttentionObject.h"
+#import "YACityInfoObject.h"
+#import "MMAppDelegateHelper.h"
+#import "YALoginCheckHelper.h"
+#import "NSString+MD5Addition.h"
+
+@implementation CCParseToObjectToDatabase
+
+#pragma mark -
+#pragma mark - 入库
+
+- (NSString *)dataParseLocalSavePath
+{
+    NSString *fileFolder = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) objectAtIndex:0];
+    NSString *fileSaveFolder = [fileFolder stringByAppendingString:@"/ParseLocalData"];
+    
+    BOOL isDir = FALSE;
+    BOOL isDirExist = [NSFileManager.defaultManager fileExistsAtPath:fileSaveFolder isDirectory:&isDir];
+    if(!(isDirExist && isDir)) {
+        BOOL bCreateDir = [NSFileManager.defaultManager createDirectoryAtPath:fileSaveFolder withIntermediateDirectories:YES attributes:nil error:nil];
+        if(!bCreateDir) {
+            NSLog(@"CCParseToObjectToDatabase---dataParseLocalSavePath---Create Database Directory Failed.");
+        }
+    }
+    return fileSaveFolder;
+}
+
+/**
+ *  数据入库
+ *
+ *  @param responseModel 要保存的responseModel
+ */
+- (void) saveResponseModelInDB:(MMResponseModel *)responseModel
+{
+    MMDataParseLocalData *localData = [MMDataParseLocalData new];
+    
+    NSMutableDictionary *sysParams = responseModel.sysParams;
+    if ([sysParams objectForKey:kResponseModel_LocalSaveId_Sign]) {
+        localData.requestMethodName = [sysParams objectForKey:kResponseModel_LocalSaveId_Sign];
+    }
+    else {
+        localData.requestMethodName = responseModel.requestMethodName;
+    }
+    if ([responseModel.responseDataObject isKindOfClass:[NSString class]] == NO) {
+        localData.responseDataObject = [responseModel.responseDataObject JSONStringWithOptions:JKSerializeOptionValidFlags error:nil];
+    }
+    else {
+        localData.responseDataObject = responseModel.responseDataObject;
+    }
+#if DEBUG
+    CFAbsoluteTime StartTime = CFAbsoluteTimeGetCurrent();
+#endif
+    
+    //本地文件形式缓存
+    localData.responseDataObject = localData.responseDataObject;
+    [localData.responseDataObject writeToFile:[[self dataParseLocalSavePath] stringByAppendingPathComponent:[localData.requestMethodName stringFromMD5]] atomically:NO encoding:NSUTF8StringEncoding error:nil];
+    
+#if DEBUG
+    NSLog(@"CCParseToObjectToDatabase save 执行时间 %f sec", CFAbsoluteTimeGetCurrent() - StartTime);
+#endif
+    //end
+    
+//    //数据库形式缓存
+//    NSData *localDatatMP = [localData.responseDataObject dataUsingEncoding:NSUTF8StringEncoding];
+//    localData.responseDataObject = [localDatatMP base64Encoding];
+//    [FMDBManage deleteFromTable:[MMDataParseLocalData class] WithString:[NSString stringWithFormat:@"%@='%@'",@"requestMethodName",localData.requestMethodName]];
+//    [FMDBManage updateTable:localData setString:[NSString stringWithFormat:@"%@=%@",@"requestMethodName",localData.requestMethodName] WithString:[NSString stringWithFormat:@"%@='%@'",@"requestMethodName",localData.requestMethodName]];
+//    NSLog(@"CCParseToObjectToDatabase save 执行时间 %f sec", CFAbsoluteTimeGetCurrent() - StartTime);
+//    //end
+}
+
+/**
+ *  读取本地缓存数据，并更新responseModel
+ *
+ *  @param responseModel 要更新的responseModel
+ */
+- (BOOL) updateResponseModelInDB:(MMResponseModel *)responseModel
+{
+    NSString *requestMethodName = nil;
+    NSMutableDictionary *sysParams = responseModel.sysParams;
+    if ([sysParams objectForKey:kResponseModel_LocalSaveId_Sign]) {
+        requestMethodName = [sysParams objectForKey:kResponseModel_LocalSaveId_Sign];
+    }
+    else {
+        requestMethodName = responseModel.requestMethodName;
+    }
+    
+#if DEBUG
+    CFAbsoluteTime StartTime = CFAbsoluteTimeGetCurrent();
+#endif
+    
+    //本地文件形式
+    NSString *filePath = [[self dataParseLocalSavePath] stringByAppendingPathComponent:[requestMethodName stringFromMD5]];
+    BOOL isDic = NO;
+    if ([[NSFileManager defaultManager] fileExistsAtPath:filePath isDirectory:&isDic]) {
+        responseModel.responseDataObject = [[NSString alloc] initWithContentsOfFile:filePath encoding:NSUTF8StringEncoding error:nil];
+        
+#if DEBUG
+        NSLog(@"CCParseToObjectToDatabase read 执行时间 %f sec", CFAbsoluteTimeGetCurrent() - StartTime);
+#endif
+        
+        return YES;
+    }
+    else {
+        return NO;
+    }
+    //end
+    
+//    //数据库形式
+//    NSMutableArray *tmpArr = [FMDBManage getDataFromTable:[MMDataParseLocalData class] WithString:[NSString stringWithFormat:@"%@='%@'",@"requestMethodName",requestMethodName]];
+//    MMDataParseLocalData *localData = [tmpArr firstObject];
+//    if (localData) {
+//        NSData *base64Data = [NSData dataWithBase64EncodedString:localData.responseDataObject];
+//        responseModel.responseDataObject = [[NSString alloc] initWithData:base64Data encoding:NSUTF8StringEncoding];
+//        NSLog(@"CCParseToObjectToDatabase read 执行时间 %f sec", CFAbsoluteTimeGetCurrent() - StartTime);
+//        return YES;
+//    }
+//    return NO;
+//    //end
+}
+
+/*
+ 功能:数据解析
+ date:2014-4-5
+ responseModel:要解析的model
+ */
+- (id) paraseDataFromResponseModel:(MMResponseModel *)responseModel error:(NSError **)error
+{
+#ifdef DEBUG
+    NSLog(@"%@-%@",responseModel.requestMethodName,responseModel.responseDataObject);
+#endif
+    
+    NSString *methodString = responseModel.requestMethodName;
+    NSDictionary *infoDic = nil;
+    if ([responseModel.responseDataObject isKindOfClass:[NSDictionary class]])
+    {
+        infoDic = responseModel.responseDataObject;
+    }
+    else if ([responseModel.responseDataObject isKindOfClass:[NSString class]])
+    {
+        infoDic = (NSDictionary *)[responseModel.responseDataObject objectFromJSONString];
+    }
+    NSMutableArray *infoArr = nil;
+    //判断是否失败
+    NSString *error_code = [infoDic objectForKey:STATUS];
+    if ([error_code integerValue] != [SUCCESS integerValue]) {
+        //账号在其他地方登录
+        if ([error_code integerValue] == 22) {
+            [[MMAppDelegateHelper shareHelper] userLoginOut:YES];
+            //用户登录界面
+            [UIViewController triggerRoute:OPEN_USERLOGIN_PAGE withParameters:nil];
+            //提示消息
+            NSString *error_msg = [infoDic objectForKey:@"error_msg"];
+            if (error_msg && [error_msg isKindOfClass:[NSString class]] && [error_msg length] > 0) {
+                [SVProgressHUD showErrorWithStatus:error_msg];
+            }
+        }
+        //如果是会话失效，重连
+        else if ([error_code integerValue] == 4)
+        {
+            [[YALoginCheckHelper shareHelper] setIsLoginChecked:NO];
+            [[YALoginCheckHelper shareHelper] isNeedLoginCheck];
+        }
+        //end
+#if DEBUG
+        NSLog(@"---%@---接口请求失败---%@----%@",methodString, error_code,[infoDic objectForKey:@"error_msg"]);
+#endif
+        *error = [NSError errorWithDomain:[infoDic objectForKey:@"error_msg"] code:[error_code integerValue] userInfo:infoDic];
+    }
+    else {
+        //方法替换特殊符号
+        methodString = [methodString stringByReplacingOccurrencesOfString:@"_" withString:@"/"];
+        @autoreleasepool {
+            //先判断是否有统一的取值和回调方法
+            if (responseModel.sysParams && [[responseModel.sysParams allKeys] containsObject:kJSONSerializing_Model_Sign]) {
+                NSString *modelClass = [responseModel.sysParams objectForKey:kJSONSerializing_Model_Sign];
+                if ([NSClassFromString(modelClass) isSubclassOfClass:[MTLModel class]] == NO) {
+                    NSLog(@"%@接口里 kJSONSerializing_Model_Sign 配置的 %@ 需要继承自 MTLModel class",methodString,modelClass);
+                    NSAssert(NO, @"");
+                }
+                NSString *keyString = [responseModel.sysParams objectForKey:kJSONSerializing_Key_Sign];
+                id keyObject = [infoDic objectForKey:keyString];
+                //如果是字典
+                if ([keyObject isKindOfClass:[NSDictionary class]]) {
+                    infoArr = [[NSMutableArray alloc] init];
+                    NSError *error = nil;
+                    MTLModel *model = [MTLJSONAdapter modelOfClass:NSClassFromString(modelClass) fromJSONDictionary:keyObject error:&error];
+                    [infoArr addObject:model];
+                    
+                    //如果是其他的数据要获取，则追加在infoArr最后
+                    if ([[responseModel.sysParams allKeys] containsObject:kJSONSerializing_OtherDic_Sign]) {
+                
+                        //其他一些数据
+                        NSMutableDictionary *otherDic = [infoDic mutableCopy];
+                        [otherDic removeObjectForKey:keyString];
+                        [infoArr addObject:otherDic];
+                        //end
+                    }
+                    //end
+                }
+                //如果是数组
+                else if ([keyObject isKindOfClass:[NSArray class]]) {
+                    infoArr = [[NSMutableArray alloc] init];
+                    //判断是否其他的数据要获取
+                    NSMutableArray *listDataArray = [NSMutableArray array];
+                    //end
+                    
+                    [keyObject enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+                        NSError *error = nil;
+                        MTLModel *model = [MTLJSONAdapter modelOfClass:NSClassFromString(modelClass) fromJSONDictionary:obj error:&error];
+                        [listDataArray addObject:model];
+                    }];
+                    
+                    [infoArr addObject:listDataArray];
+                    
+                    //如果是其他的数据要获取，则追加在infoArr最后
+                    if ([[responseModel.sysParams allKeys] containsObject:kJSONSerializing_OtherDic_Sign]) {
+
+                        //其他一些数据
+                        NSMutableDictionary *otherDic = [infoDic mutableCopy];
+                        [otherDic removeObjectForKey:keyString];
+                        [infoArr addObject:otherDic];
+                        //end
+                    }
+                    //end
+                }
+                else {
+                    infoArr = [self paraseDataFromInfoDic:infoDic methodString:methodString];
+                }
+            }
+            else {
+                infoArr = [self paraseDataFromInfoDic:infoDic methodString:methodString];
+            }
+        }
+    }
+
+    return infoArr;
+}
+
+/**
+ *  具体的解析过程
+ *
+ *  @param infoDic      请求结果
+ *  @param methodString 方法名
+ *
+ *  @return 返回值
+ */
+- (id) paraseDataFromInfoDic:(NSDictionary *)infoDic methodString:(NSString *)methodString
+{
+    NSMutableArray *infoArr = [[NSMutableArray alloc] init];
+    /**
+     *  首页接口
+     */
+    if ([methodString isEqualToString:HOME_INFO_METHOD]) {
+
+        //首页轮播图数据
+        NSArray *bannersArray = [infoDic objectForKey:@"banners"];
+        NSMutableArray *bannersObjs = [NSMutableArray array];
+        if (bannersArray && [bannersArray isKindOfClass:[NSArray class]]) {
+            [bannersArray enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+                NSError *error = nil;
+                MTLModel *model = [MTLJSONAdapter modelOfClass:NSClassFromString(@"YAHomeAdvertisementObjet") fromJSONDictionary:obj error:&error];
+                [bannersObjs addObject:model];
+            }];
+        }
+        [infoArr addObject:bannersObjs];
+        //end
+        
+        //首页问题数据
+        NSArray *questionsArray = [infoDic objectForKey:@"questions"];
+        NSMutableArray *questionsObjs = [NSMutableArray array];
+        [questionsArray enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+            NSError *error = nil;
+            MTLModel *model = [MTLJSONAdapter modelOfClass:NSClassFromString(@"YAQuestionObject") fromJSONDictionary:obj error:&error];
+            [questionsObjs addObject:model];
+        }];
+        [infoArr addObject:questionsObjs];
+        //end
+        
+        //其他一些数据
+        NSMutableDictionary *otherDic = [infoDic mutableCopy];
+        [otherDic removeObjectForKey:@"banners"];
+        [otherDic removeObjectForKey:@"questions"];
+        [infoArr addObject:otherDic];
+        //end
+    }
+    /**
+     *  首页加载更多接口
+     */
+    else if ([methodString isEqualToString:HOME_MORE_METHOD]) {
+        //首页问题数据
+        NSArray *questionsArray = [infoDic objectForKey:@"questions"];
+        NSMutableArray *questionsObjs = [NSMutableArray array];
+        [questionsArray enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+            NSError *error = nil;
+            MTLModel *model = [MTLJSONAdapter modelOfClass:NSClassFromString(@"YAQuestionObject") fromJSONDictionary:obj error:&error];
+            [questionsObjs addObject:model];
+        }];
+        [infoArr addObject:questionsObjs];
+        //end
+        
+        //其他一些数据
+        NSMutableDictionary *otherDic = [infoDic mutableCopy];
+        [otherDic removeObjectForKey:@"questions"];
+        [infoArr addObject:otherDic];
+        //end
+    }
+    //答案详情接口
+    else if ([methodString isEqualToString:QUESTION_INFO_METHOD]) {
+        NSError *error = nil;
+        MTLModel *model = [MTLJSONAdapter modelOfClass:NSClassFromString(@"YAQuestionInfoObject") fromJSONDictionary:infoDic[@"question"] error:&error];
+        [infoArr addObject:model];
+        
+        //回答列表数据
+        id keyObject = [infoDic objectForKey:@"answers"];
+        NSMutableArray *listDataArray = [NSMutableArray array];
+        [keyObject enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+            NSError *error = nil;
+            MTLModel *model = [MTLJSONAdapter modelOfClass:NSClassFromString(@"YAAnswerObject") fromJSONDictionary:obj error:&error];
+            [listDataArray addObject:model];
+        }];
+        [infoArr addObject:listDataArray];
+        //end
+        
+        //其他一些数据
+        NSMutableDictionary *otherDic = [infoDic mutableCopy];
+        [otherDic removeObjectForKey:@"question"];
+        [otherDic removeObjectForKey:@"answers"];
+        [infoArr addObject:otherDic];
+        //end
+    }
+    //问题详情接口
+    else if ([methodString isEqualToString:ANSWER_DETAIL_METHOD]) {
+        NSError *error = nil;
+        MTLModel *model = [MTLJSONAdapter modelOfClass:NSClassFromString(@"YAQuestionInfoObject") fromJSONDictionary:[infoDic objectForKey:@"question"] error:&error];
+        [infoArr addObject:model];
+        model = [MTLJSONAdapter modelOfClass:NSClassFromString(@"YAAnswerObject") fromJSONDictionary:[infoDic objectForKey:@"answer"] error:&error];
+        [infoArr addObject:model];
+    }
+    //标签详情
+    else if ([methodString isEqualToString:MARK_DETAIL_METHOD] || [methodString isEqualToString:MARK_DETAILMORE_METHOD]) {
+        //相关用户
+        id keyObject = [infoDic objectForKey:@"users"];
+        NSMutableArray *userArray = [NSMutableArray array];
+        [keyObject enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+            NSError *error = nil;
+            MTLModel *model = [MTLJSONAdapter modelOfClass:NSClassFromString(@"YAUser") fromJSONDictionary:obj error:&error];
+            [userArray addObject:model];
+        }];
+        [infoArr addObject:userArray];
+        //end
+        
+        //相关用户
+        keyObject = [infoDic objectForKey:@"questions"];
+        NSMutableArray *questionsArray = [NSMutableArray array];
+        [keyObject enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+            NSError *error = nil;
+            MTLModel *model = [MTLJSONAdapter modelOfClass:NSClassFromString(@"YAQuestionObject") fromJSONDictionary:obj error:&error];
+            [model setValue:@(1) forKeyPath:@"markModel"];
+            [questionsArray addObject:model];
+        }];
+        [infoArr addObject:questionsArray];
+        //end
+        
+        //其他一些数据
+        NSMutableDictionary *otherDic = [infoDic mutableCopy];
+        [otherDic removeObjectForKey:@"users"];
+        [otherDic removeObjectForKey:@"questions"];
+        [infoArr addObject:otherDic];
+        //end
+    }
+    //用户的关注列表
+    else if ([methodString isEqualToString:FOCUS_LIST_METHOD]) {
+        //相关用户
+        id keyObject = [infoDic objectForKey:@"users"];
+        NSMutableArray *listArray = [NSMutableArray array];
+        NSMutableDictionary *markDictionary = [NSMutableDictionary dictionary];
+        [keyObject enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+            NSError *error = nil;
+            YAInvitePersonObject *model = [MTLJSONAdapter modelOfClass:NSClassFromString(@"YAInvitePersonObject") fromJSONDictionary:obj error:&error];
+            [model setValue:@(idx) forKeyPath:@"_originIndex"];
+            [model setValue:@(-1) forKeyPath:@"cellType"];
+            UILocalizedIndexedCollation *theCollation = [UILocalizedIndexedCollation currentCollation];//这个是建立索引的核心
+            NSInteger sect = [theCollation sectionForObject:model collationStringSelector:@selector(getName)];
+            //设定姓的索引编号
+            [model setValue:@(sect) forKeyPath:@"_sectionNum"];
+            if (model.fields && [model.fields length] > 0) {
+                NSArray *markOneArray = [model.fields componentsSeparatedByString:@","];
+                [markOneArray enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+                    if ([[markDictionary allKeys] containsObject:obj]) {
+                        NSNumber *markNumber = [markDictionary objectForKey:obj];
+                        markNumber = @([markNumber integerValue] + 1);
+                        [markDictionary setValue:markNumber forKey:obj];
+                    }
+                    else {
+                        [markDictionary setValue:@(1) forKey:obj];
+                    }
+                }];
+            }
+            [listArray addObject:model];
+        }];
+        [infoArr addObject:listArray];
+        [infoArr addObject:markDictionary];
+        //end
+    }
+    //用户的共同好友
+    else if ([methodString isEqualToString:USER_SAMEFOCUSUSER_METHOD]) {
+        //相关用户
+        id keyObject = [infoDic objectForKey:@"users"];
+        NSMutableArray *listArray = [NSMutableArray array];
+        [keyObject enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+            NSError *error = nil;
+            YAInvitePersonObject *model = [MTLJSONAdapter modelOfClass:NSClassFromString(@"YAInvitePersonObject") fromJSONDictionary:obj error:&error];
+            [model setValue:@(-2) forKeyPath:@"cellType"];
+            [listArray addObject:model];
+        }];
+        [infoArr addObject:listArray];
+        //end
+        
+        //其他一些数据
+        NSMutableDictionary *otherDic = [infoDic mutableCopy];
+        [otherDic removeObjectForKey:@"users"];
+        [infoArr addObject:otherDic];
+        //end
+    }
+    //获取自己的关注信息
+    else if ([methodString isEqualToString:USER_FOCUS_METHOD]) {
+        //相关用户
+        id keyObject = [infoDic objectForKey:@"users"];
+        NSMutableArray *listArray = [NSMutableArray array];
+        NSMutableDictionary *markDictionary = [NSMutableDictionary dictionary];
+        [keyObject enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+            NSError *error = nil;
+            YAUserAttentionObject *model = [MTLJSONAdapter modelOfClass:NSClassFromString(@"YAUserAttentionObject") fromJSONDictionary:obj error:&error];
+            [model setValue:@(idx) forKeyPath:@"_originIndex"];
+            UILocalizedIndexedCollation *theCollation = [UILocalizedIndexedCollation currentCollation];//这个是建立索引的核心
+            NSInteger sect = [theCollation sectionForObject:model collationStringSelector:@selector(getName)] + 1;
+            //设定姓的索引编号
+            [model setValue:@(sect) forKeyPath:@"_sectionNum"];
+            if (model.u_fields && [model.u_fields length] > 0) {
+                NSArray *markOneArray = [model.u_fields componentsSeparatedByString:@","];
+                [markOneArray enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+                    if ([[markDictionary allKeys] containsObject:obj]) {
+                        NSNumber *markNumber = [markDictionary objectForKey:obj];
+                        markNumber = @([markNumber integerValue] + 1);
+                        [markDictionary setValue:markNumber forKey:obj];
+                    }
+                    else {
+                        [markDictionary setValue:@(1) forKey:obj];
+                    }
+                }];
+            }
+            //判断是不是新粉丝
+            if ([model.u_new_focus_me boolValue]) {
+                [model setValue:@(0) forKeyPath:@"_sectionNum"];
+            }
+            
+            [listArray addObject:model];
+        }];
+        [infoArr addObject:listArray];
+        [infoArr addObject:markDictionary];
+        //end
+    }
+    //城市列表
+    else if ([methodString isEqualToString:CITYLIST_METHOD]) {
+
+        id keyObject = [infoDic objectForKey:@"data"];
+        NSMutableArray *listArray = [NSMutableArray array];
+
+        [keyObject enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+            NSError *error = nil;
+            YACityInfoObject *model = [MTLJSONAdapter modelOfClass:NSClassFromString(@"YACityInfoObject") fromJSONDictionary:obj error:&error];
+            [model setValue:@(idx) forKeyPath:@"_originIndex"];
+            UILocalizedIndexedCollation *theCollation = [UILocalizedIndexedCollation currentCollation];//这个是建立索引的核心
+            NSInteger sect = [theCollation sectionForObject:model collationStringSelector:@selector(getName)];
+            //设定姓的索引编号
+            [model setValue:@(sect) forKeyPath:@"_sectionNum"];
+            [listArray addObject:model];
+        }];
+        [infoArr addObject:listArray];
+        //end
+    }
+    //我的邀请类消息
+    else if ([methodString isEqualToString:NOTIINVATEMESSAGE_METHOD]) {
+
+        id keyObject = [infoDic objectForKey:@"invitations"];
+        NSMutableArray *questionsArray = [NSMutableArray array];
+        [keyObject enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+            NSError *error = nil;
+            MTLModel *model = [MTLJSONAdapter modelOfClass:NSClassFromString(@"YAQuestionObject") fromJSONDictionary:obj error:&error];
+            [model setValue:@(2) forKeyPath:@"markModel"];
+            [questionsArray addObject:model];
+        }];
+        [infoArr addObject:questionsArray];
+        //end
+        
+        //其他一些数据
+        NSMutableDictionary *otherDic = [infoDic mutableCopy];
+        [otherDic removeObjectForKey:@"invitations"];
+        [infoArr addObject:otherDic];
+        //end
+    }
+    //我的追问类消息
+    else if ([methodString isEqualToString:NOTICHASELIST_METHOD]) {
+        id keyObject = [infoDic objectForKey:@"comments"];
+        NSMutableArray *questionsArray = [NSMutableArray array];
+        [keyObject enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+            NSError *error = nil;
+            MTLModel *model = [MTLJSONAdapter modelOfClass:NSClassFromString(@"YACommentObject") fromJSONDictionary:obj error:&error];
+            [model setValue:@(1) forKeyPath:@"markModel"];
+            [questionsArray addObject:model];
+        }];
+        [infoArr addObject:questionsArray];
+        //end
+        
+        //其他一些数据
+        NSMutableDictionary *otherDic = [infoDic mutableCopy];
+        [otherDic removeObjectForKey:@"comments"];
+        [infoArr addObject:otherDic];
+        //end
+    }
+    //去答列表
+    else if ([methodString isEqualToString:GOANSWERLIST_METHOD]) {
+        id keyObject = [infoDic objectForKey:@"questions"];
+        NSMutableArray *questionsArray = [NSMutableArray array];
+        [keyObject enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+            NSError *error = nil;
+            MTLModel *model = [MTLJSONAdapter modelOfClass:NSClassFromString(@"YAQuestionObject") fromJSONDictionary:obj error:&error];
+            [model setValue:@(3) forKeyPath:@"markModel"];
+            [questionsArray addObject:model];
+        }];
+        [infoArr addObject:questionsArray];
+        //end
+        
+        //其他一些数据
+        NSMutableDictionary *otherDic = [infoDic mutableCopy];
+        [otherDic removeObjectForKey:@"questions"];
+        [infoArr addObject:otherDic];
+        //end
+
+    }
+    //用户的提问列表，回答列表
+    else if ([methodString isEqualToString:USER_QUESTIONLIST_METHOD] || [methodString isEqualToString:USER_ANSWERLIST_METHOD])
+    {
+        id keyObject = [infoDic objectForKey:@"answers"];
+        NSMutableArray *questionsArray = [NSMutableArray array];
+        [keyObject enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+            NSError *error = nil;
+            MTLModel *model = [MTLJSONAdapter modelOfClass:NSClassFromString(@"YAUserQuestionObject") fromJSONDictionary:obj error:&error];
+            [model setValue:methodString forKeyPath:@"requestName"];
+            [questionsArray addObject:model];
+        }];
+        [infoArr addObject:questionsArray];
+        //end
+        
+        //其他一些数据
+        NSMutableDictionary *otherDic = [infoDic mutableCopy];
+        [otherDic removeObjectForKey:@"answers"];
+        [infoArr addObject:otherDic];
+        //end
+    }
+    //其他情况下，直接返回infoDic
+    else {
+        [infoArr addObject:infoDic];
+    }
+    return infoArr;
+}
+
+@end

@@ -1,0 +1,565 @@
+//
+//  WeiboTextView.m
+//  HyYuLe
+//
+//  Created by Wang Yang on 13-7-3.
+//  Copyright (c) 2013年 Hang Zhou Zhang Niu. All rights reserved.
+//
+
+#import "WeiboTextView.h"
+#import "AppDelegate.h"
+#import "UIViewController+Route.h"
+
+/* Callbacks */
+static void deallocCallback( void* ref ){
+    ref = nil;
+}
+static CGFloat ascentCallback( void *ref ){
+    return 12.0f;
+}
+static CGFloat descentCallback( void *ref ){
+    return 0;
+}
+static CGFloat widthCallback( void* ref ){
+    return 15.0f;
+}
+
+@implementation WeiboTextView
+@synthesize ctAttributedString = _ctAttributedString;
+
+- (void)dealloc
+{
+    self.ctAttributedString = nil;
+    self.weiboFaceResultDic = nil;
+    self.weiboFaceDic = nil;
+    self.linkArray = nil;
+    self.linkButtonArray = nil;
+
+}
+
+- (id)initWithFrame:(CGRect)frame
+{
+    self = [super initWithFrame:frame];
+    if (self) {
+        // Initialization code
+        self.weiboFaceResultDic = [NSMutableArray array];
+        
+        self.linkArray = [NSMutableArray array];
+        self.linkColor = [UIColor colorWithRed:149.0/255.0f green:229.0/255.0f blue:219.0/255.0f alpha:1.0];
+    }
+    return self;
+}
+
+- (void)awakeFromNib
+{
+    self.weiboFaceResultDic = [NSMutableArray array];
+    
+    self.linkArray = [NSMutableArray array];
+    self.linkColor = [UIColor colorWithRed:149.0/255.0f green:229.0/255.0f blue:219.0/255.0f alpha:1.0];
+}
+
+// Only override drawRect: if you perform custom drawing.
+// An empty implementation adversely affects performance during animation.
+- (void)drawRect:(CGRect)rect
+{
+    // Drawing code
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    
+    CTFramesetterRef framesetter = CTFramesetterCreateWithAttributedString((CFAttributedStringRef)_ctAttributedString);
+    CGMutablePathRef columnPath = CGPathCreateMutable();
+    
+    CGPathAddRect(columnPath, NULL ,self.bounds);
+
+    CTFrameRef frame = CTFramesetterCreateFrame(framesetter, CFRangeMake(0, [_ctAttributedString length]), columnPath, NULL);
+    //显示图片
+    [self drawImageAndLink:frame content:context];
+    
+    
+    CGContextSetTextMatrix(context , CGAffineTransformIdentity);
+    
+    CGContextTranslateCTM(context , 0 ,self.bounds.size.height);
+    CGContextScaleCTM(context, 1.0 ,-1.0);
+    
+    //释放
+    CTFrameDraw(frame, context); //4
+    
+    
+    CGPathRelease(columnPath);
+    
+    CFRelease(framesetter);
+    
+    CFRelease(frame);
+    
+    UIGraphicsPushContext(context);
+}
+
+- (void)drawImageAndLink:(CTFrameRef)frameRef content:(CGContextRef)content
+{
+    NSArray *lines = (NSArray *)CTFrameGetLines(frameRef);
+    CGPoint origins[lines.count];
+    CTFrameGetLineOrigins(frameRef, CFRangeMake(0, 0), origins);
+    
+    for (NSInteger i = 0; i < [lines count]; i++) {
+        CGPoint baselineOrigin = origins[i];
+        baselineOrigin.y = CGRectGetHeight(self.frame) - baselineOrigin.y;
+        
+        CTLineRef line = (__bridge CTLineRef)[lines objectAtIndex:i];
+        for (id runObj in (NSArray *)CTLineGetGlyphRuns(line))
+        {
+            CTRunRef run = (__bridge CTRunRef)runObj;
+            CFRange runRange = CTRunGetStringRange(run);
+
+            /*** 判断每个run是否包含图片 ***/
+            for (NSInteger imgIndex = 0; imgIndex < [self.weiboFaceResultDic count]; imgIndex ++) {
+                NSDictionary *obj = [self.weiboFaceResultDic objectAtIndex:imgIndex];
+                NSRange objRange = NSRangeFromString([obj objectForKey:@"range"]);
+                NSString *objName = [obj objectForKey:@"fileName"];
+                
+                if (runRange.location <= objRange.location &&
+                    runRange.location+ runRange.length > objRange.location)
+                {
+                    CGRect runBounds;
+                    CGFloat ascent, descent;
+                    runBounds.size.width = CTRunGetTypographicBounds(run, CFRangeMake(0, 0), &ascent, &descent, NULL) - 4;
+                    runBounds.size.height = ascent + descent;
+                    CGFloat xOffset = CTLineGetOffsetForStringIndex(line, CTRunGetStringRange(run).location, NULL);
+                    runBounds.origin.x = baselineOrigin.x  + xOffset + 2;
+                    runBounds.origin.y = baselineOrigin.y + 2;
+                    UIImage *imageOne = [UIImage imageNamed:objName];
+                    if (imageOne.size.height <= 30) {
+                        runBounds.origin.y -= 2;
+                    }
+                    runBounds.origin.y -= (ascent+descent);
+                    CGPathRef pathRef = CTFrameGetPath(frameRef);
+                    CGRect colRect = CGPathGetBoundingBox(pathRef);
+                    CGRect imgBounds = CGRectOffset(runBounds, colRect.origin.x, colRect.origin.y);
+                    
+                    [imageOne drawInRect:CGRectIntegral(imgBounds)];
+                    [self.weiboFaceResultDic removeObjectAtIndex:imgIndex];
+                    break;
+                }
+
+            }
+            
+            /*** 判断每个run是否有Link ***/
+            for (NSInteger linkIndex = 0; linkIndex < [self.linkArray count]; linkIndex ++) {
+                NSDictionary *obj = [self.linkArray objectAtIndex:linkIndex];
+                NSRange objRange = NSRangeFromString([obj objectForKey:@"range"]);
+                NSString *objName = [obj objectForKey:@"url"];
+                
+                if (runRange.location >= objRange.location &&
+                    runRange.location+ runRange.length <= objRange.location + objRange.length)
+                {
+                    CGRect runBounds;
+                    CGFloat ascent, descent;
+                    runBounds.size.width = CTRunGetTypographicBounds(run, CFRangeMake(0, 0), &ascent, &descent, NULL);
+                    runBounds.size.height = ascent + descent;
+                    CGFloat xOffset = CTLineGetOffsetForStringIndex(line, CTRunGetStringRange(run).location, NULL);
+                    runBounds.origin.x = baselineOrigin.x  + xOffset + 2;
+                    runBounds.origin.y = baselineOrigin.y + 2;
+                    runBounds.origin.y -= (ascent+descent);
+                    CGPathRef pathRef = CTFrameGetPath(frameRef);
+                    CGRect colRect = CGPathGetBoundingBox(pathRef);
+                    CGRect imgBounds = CGRectOffset(runBounds, colRect.origin.x - 2, colRect.origin.y);
+                    
+                    UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
+                    [button setTitle:objName forState:UIControlStateSelected];
+                    [button setTitleColor:[UIColor clearColor] forState:UIControlStateSelected];
+                    button.userInteractionEnabled = self.userInteractionEnabled;
+                    if (button.userInteractionEnabled) {
+                        [button setBackgroundImage:[UIImage imageNamed:@"共用底未选smail.png"] forState:UIControlStateHighlighted];
+                    }
+                    [button addTarget:self action:@selector(linkButtonDownPressed:) forControlEvents:UIControlEventAllTouchEvents];
+                    [button addTarget:self action:@selector(linkButtonUpInsidePressed:) forControlEvents:UIControlEventTouchUpInside];
+                    [button addTarget:self action:@selector(linkButtonOutInsidePressed:) forControlEvents:UIControlEventTouchUpOutside];
+                    button.frame = imgBounds;
+                    [self addSubview:button];
+                    
+                    if (button.userInteractionEnabled) {
+                        [self.linkButtonArray addObject:[NSDictionary dictionaryWithObject:button forKey:objName]];
+                    }
+                    
+                    break;
+                }
+
+            }
+        }
+        /***  在 "转发自" 行上方 画直线区分 ***/
+        CFRange lineRange = CTLineGetStringRange(line);
+        NSString *lineString = [[_ctAttributedString string] substringWithRange:NSMakeRange(lineRange.location, lineRange.length)];
+        if ([lineString hasPrefix:@"转发自"]) {
+            CGContextSetRGBStrokeColor(content, 0.5, 0.5, 0.5, 0.5);//线条颜色
+            CGContextMoveToPoint(content, 0, baselineOrigin.y - 20);
+            CGContextAddLineToPoint(content, CGRectGetWidth(self.frame),baselineOrigin.y - 20);
+            CGContextStrokePath(content);
+        }
+    }
+}
+
++ (NSString *)getWeiboText:(NSDictionary *)rowDic
+{
+    NSString *weiboText = [rowDic objectForKey:@"text"];
+    NSDictionary *retweetNS = [rowDic objectForKey:@"retweeted_status"];
+    if (retweetNS) {
+        NSString *textTwo = [retweetNS objectForKey:@"text"];
+        NSDictionary *useDic = [retweetNS objectForKey:@"user"];
+        NSString *useName = [useDic objectForKey:@"screen_name"];
+        weiboText = [weiboText stringByAppendingString:[NSString stringWithFormat:@"\n\n转发自%@:%@",useName,textTwo]];
+    }
+    return weiboText;
+}
+
++ (NSString *)getWeiboImagePath:(NSDictionary *)rowDic
+{
+    NSDictionary *retweetNS = [rowDic objectForKey:@"retweeted_status"];
+    NSString *imageURl = nil;
+    if (retweetNS) {
+        imageURl = [retweetNS objectForKey:@"bmiddle_pic"];
+    }
+    if (imageURl == nil) {
+        imageURl = [rowDic objectForKey:@"bmiddle_pic"];
+    }
+    return imageURl;
+}
+
+#pragma mark - 链接按钮点击 相关处理方法
+
+- (void)linkButtonDownPressed:(UIButton *)button
+{
+    NSString *stringUrl = [button titleForState:UIControlStateSelected];
+    [self.linkButtonArray enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+        NSDictionary *buttonDic = (NSDictionary *)obj;
+        if ([buttonDic.allKeys containsObject:stringUrl]) {
+            UIButton *button = [buttonDic objectForKey:stringUrl];
+            button.highlighted = YES;
+        }
+    }];
+}
+
+- (void)linkButtonUpInsidePressed:(UIButton *)button
+{
+    NSString *stringUrl = [button titleForState:UIControlStateSelected];
+    [self.linkButtonArray enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+        NSDictionary *buttonDic = (NSDictionary *)obj;
+        if ([buttonDic.allKeys containsObject:stringUrl]) {
+            UIButton *button = [buttonDic objectForKey:stringUrl];
+            [button performSelector:@selector(setHighlighted:) withObject:[NSNumber numberWithBool:NO] afterDelay:0.2];
+        }
+    }];
+    
+    [UIViewController triggerRoute:OPEN_OUTLINKNORMAL_PAGE withParameters:@{@"titleString":@"链接",@"outLinkPath":stringUrl}];
+    //发送通知 打开链接
+    //[[NSNotificationCenter defaultCenter] postNotificationName:NOTIFICATION_NAME object:nil userInfo:[NSDictionary dictionaryWithObjectsAndKeys:NOT_VALUE_OBJECT_PRESSLINKS,NOT_KEY_OBJECT,[NSNumber numberWithBool:YES],NOT_KEY_OBJECT_STATE,stringUrl,NOT_KEY_OBJECT_ID, nil]];
+}
+
+- (void)linkButtonOutInsidePressed:(UIButton *)button
+{
+    NSString *stringUrl = [button titleForState:UIControlStateSelected];
+    [self.linkButtonArray enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+        NSDictionary *buttonDic = (NSDictionary *)obj;
+        if ([buttonDic.allKeys containsObject:stringUrl]) {
+            UIButton *button = [buttonDic objectForKey:stringUrl];
+            [button performSelector:@selector(setHighlighted:) withObject:[NSNumber numberWithBool:NO] afterDelay:0.2];
+        }
+    }];
+}
+
+#pragma mark - FYCoreTextProtocol
+
+- (void)setCTText:(NSString *)text
+{
+    self.ctAttributedString = [[NSMutableAttributedString alloc] initWithString:text];
+    self.linkArray = [NSMutableArray array];
+    self.weiboFaceResultDic = [NSMutableArray array];
+    self.linkButtonArray = [NSMutableArray array];
+    
+    /*** 清除已经存在的linkbutton ***/
+    [self.subviews enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+        if ([obj isKindOfClass:[UIButton class]]) {
+            [obj removeFromSuperview];
+        }
+    }];
+    
+    NSDictionary *weiboFaceDictionary = @{@"[稿件]": @"img_Link"};
+    NSArray *weiboFaceDicKeys =  [weiboFaceDictionary allKeys];
+    /*** 替换里面的图片 ***/
+    NSMutableAttributedString *string = [[NSMutableAttributedString alloc] initWithString:@""];
+    BOOL isFanish = NO;
+    while (!isFanish) {
+        NSRegularExpression* regex = [[NSRegularExpression alloc]
+                                      initWithPattern:@"\\[[a-zA-Z0-9\\u4e00-\\u9fa5]+\\]"
+                                      options:NSRegularExpressionCaseInsensitive|NSRegularExpressionDotMatchesLineSeparators
+                                      error:nil]; 
+        NSArray* chunks = [regex matchesInString:[_ctAttributedString string] options:0
+                                           range:NSMakeRange(0, [_ctAttributedString length])];
+        
+        for (NSInteger index = 0; index < [chunks count]; index ++) {
+            NSTextCheckingResult *b = (NSTextCheckingResult *)[chunks objectAtIndex:index];
+            NSString *key = [[_ctAttributedString string] substringWithRange:b.range];
+            
+            if ([weiboFaceDicKeys containsObject:key]) {
+                NSString *i_transCharacter = [weiboFaceDictionary objectForKey:key];
+                UIImage *faceImage = [UIImage imageNamed:[NSString stringWithFormat:@"%@",i_transCharacter]];
+                if (faceImage) {
+                    
+                    NSInteger imageHei = faceImage.size.height;
+                    NSInteger imageWid = faceImage.size.width;
+                    imageHei = imageHei < 30 ? 30 : imageHei;
+                    imageWid = imageWid < 30 ? 30 : imageWid;
+                    __block NSNumber *height = [NSNumber numberWithFloat:imageHei/2];
+                    __block NSNumber *width = [NSNumber numberWithFloat:imageWid/2 + 4];
+                    
+                    [self.weiboFaceResultDic addObject:
+                     [NSDictionary dictionaryWithObjectsAndKeys:
+                      i_transCharacter, @"fileName",NSStringFromRange(b.range), @"range",
+                      nil]
+                     ];
+                    
+                    NSDictionary* imgAttr = [NSDictionary dictionaryWithObjectsAndKeys:
+                                              
+                                              height, @"height",
+                                              width, @"width",
+                                              nil];
+                    
+                    CTRunDelegateCallbacks callbacks;
+                    callbacks.version = kCTRunDelegateVersion1;
+                    callbacks.getAscent = ascentCallback;
+                    callbacks.getDescent = descentCallback;
+                    callbacks.getWidth = widthCallback;
+                    callbacks.dealloc = deallocCallback;
+                    
+                    CTRunDelegateRef delegate = CTRunDelegateCreate(&callbacks, (__bridge void *)(imgAttr));
+                    NSDictionary *attrDictionaryDelegate = [NSDictionary dictionaryWithObjectsAndKeys:
+                                                            //set the delegate
+                                                            (__bridge id)delegate, (NSString*)kCTRunDelegateAttributeName,
+                                                            [UIColor clearColor].CGColor,(NSString*)kCTForegroundColorAttributeName,
+                                                            nil];
+                    CFRelease(delegate);
+                    //add a space to the text so that it can call the delegate
+                    [string appendAttributedString:[[NSAttributedString alloc] initWithString:@"." attributes:attrDictionaryDelegate]];
+                    [_ctAttributedString replaceCharactersInRange:b.range withAttributedString:string];
+                    string = [[NSMutableAttributedString alloc] initWithString:@""];
+                    break;
+                }
+            }
+            if (index == [chunks count] - 1) {
+                isFanish = YES;
+            }
+        }
+        if ([chunks count] == 0) {
+            isFanish = YES;
+        }
+    }
+
+    [WeiboTextView setCTTextParagraphStyle:_ctAttributedString];
+    NSInteger index = 0;
+    while (index < [self.weiboFaceResultDic count]) {
+        NSDictionary *obj = [self.weiboFaceResultDic objectAtIndex:index];
+        NSRange objRange = NSRangeFromString([obj objectForKey:@"range"]);
+        [_ctAttributedString addAttribute:(id)kCTForegroundColorAttributeName value:(id)([UIColor clearColor].CGColor) range:NSMakeRange(objRange.location,1)];
+        index ++;
+    }
+    /*** 匹配网络连接 ***/
+    NSRegularExpression* regex = [[NSRegularExpression alloc]
+                                  initWithPattern:@"(https?|ftp|file)://[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%=~_|]"
+                                  options:NSRegularExpressionCaseInsensitive|NSRegularExpressionDotMatchesLineSeparators
+                                  error:nil]; 
+    NSArray* chunks = [regex matchesInString:[_ctAttributedString string] options:0
+                                       range:NSMakeRange(0, [_ctAttributedString length])];
+
+    for (NSTextCheckingResult* b in chunks)
+    {
+        NSString *url = [[_ctAttributedString string] substringWithRange:b.range];
+        
+        [self.linkArray addObject:
+         [NSDictionary dictionaryWithObjectsAndKeys:
+          url, @"url",NSStringFromRange(b.range), @"range",
+          nil]
+         ];
+        
+        NSMutableAttributedString *Twostring = [[NSMutableAttributedString alloc] initWithString:@"稿件链接"];
+        [_ctAttributedString replaceCharactersInRange:b.range withAttributedString:Twostring];
+        NSRange rangeNew = NSMakeRange(b.range.location, 4);
+        [_ctAttributedString addAttribute:(id)kCTForegroundColorAttributeName value:(id)self.linkColor.CGColor range:rangeNew];
+        CTFontRef helvetica = CTFontCreateUIFontForLanguage(kCTFontSystemFontType,16.0, NULL);
+        [_ctAttributedString addAttribute:(id)kCTFontAttributeName value:(__bridge id)helvetica range:rangeNew];
+        CFRelease(helvetica);
+        //NSNumber *underline = [NSNumber numberWithInt:kCTUnderlineStyleSingle];
+		//[_ctAttributedString addAttribute:(id)kCTUnderlineStyleAttributeName
+                              //      value:(id)underline
+                                //    range:rangeNew];
+
+        
+        //int32_t uStyle = kCTUnderlineStyleSingle;
+        //if (uStyle>0)
+            //add a space to the text so that it can call the delegate
+           // [_ctAttributedString replaceCharactersInRange:b.range withAttributedString:Twostring];
+       // [_ctAttributedString replaceCharactersInRange:b.range withAttributedString:Twostring];
+        //[_ctAttributedString addAttribute:(NSString*)kCTUnderlineStyleAttributeName value:[NSNumber numberWithInt:uStyle] range:b.range];
+    }
+    /*** 调整转发微博中 "转发自" 上面一行高度 ***/
+    NSRegularExpression* regexTwo = [[NSRegularExpression alloc]
+                                  initWithPattern:@"\n转发自"
+                                  options:NSRegularExpressionCaseInsensitive|NSRegularExpressionDotMatchesLineSeparators
+                                  error:nil];
+    NSArray* chunksTwo = [regexTwo matchesInString:[_ctAttributedString string] options:0
+                                       range:NSMakeRange(0, [_ctAttributedString length])];
+    if ([chunksTwo count] >= 1) {
+        NSTextCheckingResult *b = [chunksTwo objectAtIndex:0];
+        CTFontRef helvetica = CTFontCreateUIFontForLanguage(kCTFontSystemFontType,4.0, NULL);
+        [_ctAttributedString addAttribute:(id)kCTFontAttributeName value:(__bridge id)helvetica range:NSMakeRange(b.range.location, 1)];
+        CFRelease(helvetica);
+    }
+    [self setNeedsDisplay];
+}
+
++ (void)setCTTextParagraphStyle:(NSMutableAttributedString *)stringAttributed
+{
+    //设置字体及大小
+    CTFontRef helvetica = CTFontCreateUIFontForLanguage(kCTFontSystemFontType,16.0, NULL);
+    [stringAttributed addAttribute:(id)kCTFontAttributeName value:(__bridge id)helvetica range:NSMakeRange(0,[stringAttributed length])];
+    CFRelease(helvetica);
+
+    //设置字间距
+    long number = 1.0f;
+    CFNumberRef num = CFNumberCreate(kCFAllocatorDefault,kCFNumberSInt8Type,&number);
+    [stringAttributed addAttribute:(id)kCTKernAttributeName value:(__bridge id)num range:NSMakeRange(0,[stringAttributed length])];
+    CFRelease(num);
+    
+    //设置字体颜色
+    UIColor *textColor = MMRGBColor(40, 40, 40);
+    [stringAttributed addAttribute:(id)kCTForegroundColorAttributeName value:(id)(textColor.CGColor) range:NSMakeRange(0,[stringAttributed length])];
+    
+    
+    //段落 属性
+    CTTextAlignment alignmentt = kCTTextAlignmentJustified;
+    CGFloat lineSpacingg = 4.0f;
+    
+    CTParagraphStyleSetting altSettings[] =
+    {
+        { kCTParagraphStyleSpecifierLineSpacing, sizeof(CGFloat), &lineSpacingg},
+        { kCTParagraphStyleSpecifierAlignment, sizeof(CTTextAlignment), &alignmentt},
+    };
+    
+    CTParagraphStyleRef style;
+    style = CTParagraphStyleCreate( altSettings, sizeof(altSettings) / sizeof(CTParagraphStyleSetting) );
+    
+    if ( style == NULL )
+    {
+        NSLog(@"*** Unable To Create CTParagraphStyle in apply paragraph formatting" );
+        return;
+    }
+    
+    [stringAttributed addAttributes:[NSDictionary dictionaryWithObjectsAndKeys:(__bridge NSObject*)style,(NSString*) kCTParagraphStyleAttributeName, nil] range:NSMakeRange(0,[stringAttributed length])];
+    CFRelease(style);
+
+}
+
++ (NSInteger)getCTTextParagraphHei:(NSString *)text textWid:(NSInteger)textWid
+{
+    NSMutableAttributedString *stringAttributed = [[NSMutableAttributedString alloc] initWithString:text];
+    NSDictionary *weiboFaceDictionary = @{@"[稿件]": @"img_Link"};
+    NSArray *weiboFaceDicKeys =  [weiboFaceDictionary allKeys];
+    /*** 替换里面的图片 ***/
+    NSMutableAttributedString *string = [[NSMutableAttributedString alloc] initWithString:@""];
+    BOOL isFanish = NO;
+    while (!isFanish) {
+        NSRegularExpression* regex = [[NSRegularExpression alloc]
+                                      initWithPattern:@"\\[[a-zA-Z0-9\\u4e00-\\u9fa5]+\\]"
+                                      options:NSRegularExpressionCaseInsensitive|NSRegularExpressionDotMatchesLineSeparators
+                                      error:nil]; //2
+        NSArray* chunks = [regex matchesInString:[stringAttributed string] options:0
+                                           range:NSMakeRange(0, [stringAttributed length])];
+
+        for (NSInteger index = 0; index < [chunks count]; index ++) {
+            NSTextCheckingResult *b = (NSTextCheckingResult *)[chunks objectAtIndex:index];
+            NSString *key = [[stringAttributed string] substringWithRange:b.range];
+            
+            if ([weiboFaceDicKeys containsObject:key]) {
+                NSString *i_transCharacter = [weiboFaceDictionary objectForKey:key];
+                UIImage *faceImage = [UIImage imageNamed:[NSString stringWithFormat:@"%@",i_transCharacter]];
+                if (faceImage) {
+                    
+                    NSInteger imageHei = faceImage.size.height;
+                    NSInteger imageWid = faceImage.size.width;
+                    imageHei = imageHei < 30 ? 30 : imageHei;
+                    imageWid = imageWid < 30 ? 30 : imageWid;
+                    __block NSNumber *height = [NSNumber numberWithFloat:imageHei/2];
+                    __block NSNumber *width = [NSNumber numberWithFloat:imageWid/2 + 4];
+
+                    
+                    NSDictionary* imgAttr = [NSDictionary dictionaryWithObjectsAndKeys:
+                                              
+                                              height, @"height",
+                                              width, @"width",
+                                              nil];
+                    
+                    CTRunDelegateCallbacks callbacks;
+                    callbacks.version = kCTRunDelegateVersion1;
+                    callbacks.getAscent = ascentCallback;
+                    callbacks.getDescent = descentCallback;
+                    callbacks.getWidth = widthCallback;
+                    callbacks.dealloc = deallocCallback;
+                    
+                    CTRunDelegateRef delegate = CTRunDelegateCreate(&callbacks, (__bridge void *)(imgAttr));
+                    NSDictionary *attrDictionaryDelegate = [NSDictionary dictionaryWithObjectsAndKeys:
+                                                            //set the delegate
+                                                            (__bridge id)delegate, (NSString*)kCTRunDelegateAttributeName,
+                                                            [UIColor clearColor].CGColor,(NSString*)kCTForegroundColorAttributeName,
+                                                            nil];
+                    CFRelease(delegate);
+                    //add a space to the text so that it can call the delegate
+                    [string appendAttributedString:[[NSAttributedString alloc] initWithString:@"." attributes:attrDictionaryDelegate]];
+                    [stringAttributed replaceCharactersInRange:b.range withAttributedString:string];
+                    string = [[NSMutableAttributedString alloc] initWithString:@""];
+                    break;
+                }
+            }
+            if (index == [chunks count] - 1) {
+                isFanish = YES;
+            }
+        }
+        if ([chunks count] == 0) {
+            isFanish = YES;
+        }
+    }
+    [WeiboTextView setCTTextParagraphStyle:stringAttributed];
+    
+    /*** 调整转发微博中 "转发自" 上面一行高度 ***/
+    NSRegularExpression* regexTwo = [[NSRegularExpression alloc]
+                                     initWithPattern:@"\n转发自"
+                                     options:NSRegularExpressionCaseInsensitive|NSRegularExpressionDotMatchesLineSeparators
+                                     error:nil];
+    NSArray* chunksTwo = [regexTwo matchesInString:[stringAttributed string] options:0
+                                             range:NSMakeRange(0, [stringAttributed length])];
+    if ([chunksTwo count] >= 1) {
+        NSTextCheckingResult *b = [chunksTwo objectAtIndex:0];
+        CTFontRef helvetica = CTFontCreateUIFontForLanguage(kCTFontSystemFontType,4.0, NULL);
+        [stringAttributed addAttribute:(id)kCTFontAttributeName value:(__bridge id)helvetica range:NSMakeRange(b.range.location, 1)];
+        CFRelease(helvetica);
+    }
+
+    return [stringAttributed getMutableAttributedStringHeightWithWidthValue:textWid];
+}
+
++ (CGFloat)getHeightWithText:(NSString *)text width:(CGFloat)width
+{
+    NSMutableAttributedString *attrStr = [[NSMutableAttributedString alloc] initWithString:text];
+    NSRange allRange = NSMakeRange(0, text.length);
+    [attrStr addAttribute:NSFontAttributeName
+                    value:[UIFont systemFontOfSize:16]
+                    range:allRange];
+    [attrStr addAttribute:NSForegroundColorAttributeName
+                    value:[UIColor whiteColor]
+                    range:allRange];
+    [attrStr addAttribute:NSKernAttributeName value:@(1) range:allRange];
+    NSMutableParagraphStyle *style = [[NSParagraphStyle defaultParagraphStyle] mutableCopy];
+    style.lineSpacing = 4;
+    [attrStr addAttribute:NSParagraphStyleAttributeName
+                    value:style
+                    range:allRange];
+    CGRect titleLabelRect = [attrStr boundingRectWithSize:CGSizeMake(width, MAXFLOAT) options:NSStringDrawingUsesLineFragmentOrigin | NSStringDrawingUsesFontLeading context:nil];
+    return titleLabelRect.size.height + 4;
+}
+
+@end

@@ -1,0 +1,1669 @@
+//
+//  CCClientRequest.m
+//  WoZaiXianChang
+//
+//  Created by lcc on 13-9-17.
+//  Copyright (c) 2013年 lcc. All rights reserved.
+//
+
+#import "CCClientRequest.h"
+#import "MMDataParseSuper.h"
+#import "MetaData.h"
+#import "NetWorkObserver.h"
+#import "CCParseToObjectToDatabase.h"
+#import "NSString+URLEncoding.h"
+#import <CoreTelephony/CTCarrier.h>
+#import <CoreTelephony/CTTelephonyNetworkInfo.h>
+#import <CommonCrypto/CommonDigest.h>
+#import "NSString+URLEncoding.h"
+#import "FMDBManage.h"
+#import "JSONKit.h"
+
+//刷新时间
+#define FreshTimeTypeOne 0
+#define FreshTimeTypeTwo 0
+
+@interface MMClientRequest ()
+
+/**
+ *  请求的方法名
+ */
+@property (nonatomic, strong) NSString *requestMethodName;
+
+/**
+ *  请求得到的结果，默认空，接口请求正常时，不为空
+ */
+@property (nonatomic, strong) id responseObject;
+
+/**
+ *  错误结果对象，默认空，接口返回错误时，不为空
+ */
+@property (nonatomic, strong) NSError *errorObject;
+
+@end
+
+//所有界面数据返回 与 请求
+@implementation CCClientRequest
+
+
+#pragma mark - 
+#pragma mark - 所有数据请求
+
+/**
+ *  2.1.	注册时获取手机验证码
+ *
+ *  @param phoneNumber 手机号码
+ */
+- (void)getCodeReg:(NSString *)phoneNumber
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:phoneNumber forKey:@"phone"];
+
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = USER_CODEREG_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  2.5.	修改密码时获取手机验证码
+ *
+ *  @param phoneNumber 手机号码
+ */
+- (void)getCodeCp:(NSString *)phoneNumber
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:phoneNumber forKey:@"phone"];
+    
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = USER_CODERCP_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  用户登录接口
+ *
+ *  @param phone    手机
+ *  @param password 密码
+ *  @param weixinId 微信id
+ *  @param weiboId  微博id
+ *  @param accessToken 接口调用凭证
+ */
+- (void)loginWithPhone:(NSString *)phone
+              password:(NSString *)password
+              weixinId:(NSString *)weixinId
+               weiboId:(NSString *)weiboId
+           accessToken:(NSString *)accessToken
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:phone forKey:@"phone"];
+    [params setObject:password forKey:@"password"];
+    [params setObject:(weixinId == nil ? @"" : weixinId) forKey:@"weixin_open_id"];
+    [params setObject:(weiboId == nil ? @"" : weiboId) forKey:@"weibo_open_id"];
+    [params setObject:accessToken?:@"" forKey:@"access_token"];
+    
+    [params setObject:[@(MMAppDelegate.locationHelper.userLocation.latitude) stringValue] forKey:@"latitude"];
+    [params setObject:[@(MMAppDelegate.locationHelper.userLocation.longitude) stringValue] forKey:@"longitude"];
+    [params setObject:[MetaData getUid] forKey:@"device_id"];
+    [params setObject:[MetaData getPlatform] forKey:@"device_model"];
+    [params setObject:[MetaData getLongOSVersion] forKey:@"device_os"];
+    [params setObject:YA_APP_MARKET forKey:@"app_market"];
+    [params setObject:[MetaData getCurrVer] forKey:@"app_version"];
+    [params setObject:MMAppDelegate.pushManager.clientId?:@"" forKey:@"gt_client_id"];//推送token
+    
+    //添加屏幕分辨率
+    if (IOS8AFTER) {
+        [params setValue:@(CGRectGetWidth([[UIScreen mainScreen] nativeBounds])) forKey:@"screen_width"];
+        [params setValue:@(CGRectGetHeight([[UIScreen mainScreen] nativeBounds])) forKey:@"screen_height"];
+    }
+    else {
+        [params setValue:@(ScreenWidth*2) forKey:@"screen_width"];
+        [params setValue:@(ScreenHeight*2) forKey:@"screen_height"];
+    }
+    //end
+    
+    [CCClientRequest addParamToDic:params];
+
+    //配置参数，用户解析对象
+    NSMutableDictionary *systemParams = [@{kJSONSerializing_Key_Sign:@"user",kJSONSerializing_Model_Sign:@"YAUser",kRequestModel_NoCheckLogin_Sign:@(YES)} mutableCopy];
+    //end
+    
+    self.requestMethodName = USER_LOGIN_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:systemParams methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  启动app时调用的接口
+ *
+ *  @param userId       用户id
+ *  @param password     密码(服务端给的保存在客户端的)
+ *  @param loginFeature 上次正式登录识别码
+ */
+- (void)appLaunchingAccessWithUserId:(NSString *)userId
+                            password:(NSString *)password
+                        loginFeature:(NSString *)loginFeature
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:userId==nil?@"":userId forKey:@"user_id"];
+    [params setObject:password==nil?@"":password forKey:@"password"];
+    [params setObject:loginFeature==nil?@"":loginFeature forKey:@"login_feature"];
+    
+    [params setObject:[@(MMAppDelegate.locationHelper.userLocation.latitude) stringValue] forKey:@"latitude"];
+    [params setObject:[@(MMAppDelegate.locationHelper.userLocation.longitude) stringValue] forKey:@"longitude"];
+    [params setObject:[MetaData getUid] forKey:@"device_id"];
+    [params setObject:[MetaData getPlatform] forKey:@"device_model"];
+    [params setObject:[MetaData getLongOSVersion] forKey:@"device_os"];
+    [params setObject:YA_APP_MARKET forKey:@"app_market"];
+    [params setObject:[MetaData getCurrVer] forKey:@"app_version"];
+    [params setValue:[NSString stringWithFormat:@"%@",[MMAppDelegate.appModel firstLaunchStrSign]] forKey:@"first_launch"];
+    [MMAppDelegate.appModel updateFirstLaunchStrSign:@"0"];
+    
+    [params setObject:MMAppDelegate.pushManager.clientId?:@"" forKey:@"gt_client_id"];//推送token
+    
+    //添加屏幕分辨率
+    if (IOS8AFTER) {
+        [params setValue:@(CGRectGetWidth([[UIScreen mainScreen] nativeBounds])) forKey:@"screen_width"];
+        [params setValue:@(CGRectGetHeight([[UIScreen mainScreen] nativeBounds])) forKey:@"screen_height"];
+    }
+    else {
+        [params setValue:@(ScreenWidth*2) forKey:@"screen_width"];
+        [params setValue:@(ScreenHeight*2) forKey:@"screen_height"];
+    }
+    //end
+
+    [CCClientRequest addParamToDic:params];
+    
+#if DEBUG
+    NSLog(@"appLaunchingAccessWithUserId---loginFeature---%@",loginFeature);
+#endif
+    
+    //配置参数，用户解析对象
+    NSMutableDictionary *systemParams = [@{kRequestModel_NoCheckLogin_Sign:@(YES),kJSONSerializing_Key_Sign:@"user",kJSONSerializing_Model_Sign:@"YAUser",kJSONSerializing_OtherDic_Sign:@(YES)} mutableCopy];
+    //end
+    
+    self.requestMethodName = APP_ACCESS_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:systemParams methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  通知个推id
+ *
+ *  @param clientId 个推id
+ *  @param userId  用户id
+ */
+- (void)notifyGeTuiClientId:(NSString *)clientId
+                     userId:(NSString *)userId
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:clientId==nil?@"":clientId forKey:@"gt_client_id"];
+
+    [params setObject:[@(MMAppDelegate.locationHelper.userLocation.latitude) stringValue] forKey:@"latitude"];
+    [params setObject:[@(MMAppDelegate.locationHelper.userLocation.longitude) stringValue] forKey:@"longitude"];
+    [params setObject:[MetaData getUid] forKey:@"device_id"];
+    [params setObject:[MetaData getPlatform] forKey:@"device_model"];
+    [params setObject:[MetaData getLongOSVersion] forKey:@"device_os"];
+    [params setObject:YA_APP_MARKET forKey:@"app_market"];
+    [params setObject:[MetaData getCurrVer] forKey:@"app_version"];
+    [params setObject:userId?:@"" forKey:@"user_id"];
+    
+    [CCClientRequest addParamToDic:params];
+    
+    //配置参数，用户解析对象
+    NSMutableDictionary *systemParams = [@{kRequestModel_NoCheckLogin_Sign:@(YES)} mutableCopy];
+    //end
+    
+    self.requestMethodName = NOTIFY_GETUIID_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:systemParams methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  每日签到接口
+ */
+- (void)userEverydaySignIn
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [CCClientRequest addParamToDic:params];
+    
+    //配置参数，用户解析对象
+    NSMutableDictionary *systemParams = [@{kRequestModel_NoCheckLogin_Sign:@(YES)} mutableCopy];
+    //end
+    
+    self.requestMethodName = USER_SIGNIN_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:systemParams methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  2.2 注册
+ *
+ *  @param phoneNumber 用户手机号
+ *  @param regCode     验证码
+ *  @param password    密码
+ *  @param invitedCode 邀请码
+ */
+- (void)registerWithPhoneNumber:(NSString *)phoneNumber
+                        regCode:(NSString *)regCode
+                       password:(NSString *)password
+                    invitedCode:(NSString *)invitedCode
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:phoneNumber forKey:@"phone"];
+    [params setObject:regCode forKey:@"code"];
+    [params setObject:password forKey:@"password"];
+    [params setObject:invitedCode?:@"" forKey:@"invited_code"];
+    
+    [params setObject:[@(MMAppDelegate.locationHelper.userLocation.latitude) stringValue] forKey:@"latitude"];
+    [params setObject:[@(MMAppDelegate.locationHelper.userLocation.longitude) stringValue] forKey:@"longitude"];
+    [params setObject:[MetaData getUid] forKey:@"device_id"];
+    [params setObject:[MetaData getPlatform] forKey:@"device_model"];
+    [params setObject:[MetaData getLongOSVersion] forKey:@"device_os"];
+    [params setObject:YA_APP_MARKET forKey:@"app_market"];
+    [params setObject:[MetaData getCurrVer] forKey:@"app_version"];
+    [params setObject:MMAppDelegate.pushManager.clientId?:@"" forKey:@"gt_client_id"];//推送token
+    
+    [CCClientRequest addParamToDic:params];
+    
+    //配置参数，用户解析对象
+    NSMutableDictionary *systemParams = [@{kJSONSerializing_Key_Sign:@"user",kJSONSerializing_Model_Sign:@"YAUser",kRequestModel_NoCheckLogin_Sign:@(YES)} mutableCopy];
+    //end
+    
+    self.requestMethodName = USER_REGIST_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:systemParams methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  2.6.	修改密码
+ *
+ *  @param phoneNumber 手机号码
+ *  @param cpCode      验证码
+ *  @param password    密码
+ */
+- (void)changePasswordWithPhoneNumber:(NSString *)phoneNumber
+                               cpCode:(NSString *)cpCode
+                             password:(NSString *)password
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:phoneNumber forKey:@"phone"];
+    [params setObject:cpCode forKey:@"code"];
+    [params setObject:password forKey:@"password"];
+    
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = USER_CHANGEPSWORD_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  1.3 文件上传
+ *
+ *  @param localPath 本地的地址
+ *  @param fileType  文件类型，如image,video,audio
+ *  @param systemParams  系统参数
+ */
+- (void)fileUploadWithLocalPath:(NSString *)localPath
+                       fileType:(NSString *)fileType
+                   systemParams:(NSMutableDictionary *)systemParams
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:fileType forKey:@"file_type"];
+    [params setObject:localPath forKey:@"file"];
+    
+    self.requestMethodName = FILE_UPLOAD;
+    
+    [self.superRequest beginFilePostRequestDataWithParam:params systemParams:systemParams methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  首页首屏接口
+ *
+ *  @param maxSize 最大个数
+ */
+- (void)homeInfo
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:YAPAGE_MAX_SIZE forKey:@"max_size"];
+    
+    [CCClientRequest addParamToDic:params];
+    
+    //系统参数
+    NSMutableDictionary *systemParams = [[NSMutableDictionary alloc] init];
+    //添加本地缓存
+    [systemParams setValue:[@(YES) stringValue] forKey:kResponseModel_LocalSave_Sign];
+    //缓存策略
+    [systemParams setValue:@(MMRequestReturnCacheDataElseLoad) forKey:kResponseModel_CachePolicy_Sign];
+    
+    self.requestMethodName = HOME_INFO_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:systemParams methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  首页加载更多接口
+ *
+ *  @param maxSize      最大个数
+ *  @param exclusionIds 排除的所有id，用 , 分隔
+ */
+- (void)homeMoreWithExclusionIds:(NSString *)exclusionIds
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:YAPAGE_MAX_SIZE forKey:@"max_size"];
+    [params setObject:exclusionIds == nil ? @"" : exclusionIds forKey:@"exclusion"];
+    
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = HOME_MORE_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+#pragma mark - 问题详情
+
+/**
+ *  问题详情信息
+ *
+ *  @param questionId 问题 id
+ */
+- (void)questionInfoWithQuestionId:(NSString *)questionId
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:YAPAGE_MAX_SIZE forKey:@"max_size"];
+    [params setObject:questionId forKey:@"question_id"];
+    
+    [CCClientRequest addParamToDic:params];
+    
+    //系统参数
+    NSMutableDictionary *systemParams = [[NSMutableDictionary alloc] init];
+    //添加本地缓存
+    [systemParams setValue:[@(YES) stringValue] forKey:kResponseModel_LocalSave_Sign];
+    //缓存策略
+    [systemParams setValue:@(MMRequestReturnCacheDataWhenFailed) forKey:kResponseModel_CachePolicy_Sign];
+    [systemParams setValue:[NSString stringWithFormat:@"%@%@",QUESTION_INFO_METHOD,questionId] forKey:kResponseModel_LocalSaveId_Sign];
+    
+    self.requestMethodName = QUESTION_INFO_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:systemParams methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  获取待回答用户列表
+ *
+ *  @param questionId 问题id
+ */
+- (void)getScheduleListWithQuestionId:(NSString *)questionId
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:questionId forKey:@"question_id"];
+    
+    [CCClientRequest addParamToDic:params];
+    
+    //配置参数，用户解析对象
+    NSMutableDictionary *systemParams = [@{kJSONSerializing_Key_Sign:@"invitations",kJSONSerializing_Model_Sign:@"YAUser"} mutableCopy];
+    //end
+    
+    self.requestMethodName = SCHEDULE_LIST_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:systemParams methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  4.2. 获取回答列表
+ *
+ *  @param questionId   问题id
+ *  @param exclusionIds 客户端当前查看的所有id列表，逗号分隔
+ */
+- (void)getAnswerListWithQuestionId:(NSString *)questionId
+                       exclusionIds:(NSString *)exclusionIds
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:YAPAGE_MAX_SIZE forKey:@"max_size"];
+    [params setObject:questionId forKey:@"question_id"];
+    [params setObject:exclusionIds == nil ? @"" : exclusionIds forKey:@"exclusion"];
+    
+    [CCClientRequest addParamToDic:params];
+    
+    //配置参数，用户解析对象
+    NSMutableDictionary *systemParams = [@{kJSONSerializing_Key_Sign:@"answers",kJSONSerializing_Model_Sign:@"YAAnswerObject",kJSONSerializing_OtherDic_Sign:@(YES)} mutableCopy];
+    //end
+    
+    self.requestMethodName = QUESTION_ANSWERLIST_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:systemParams methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  获取未读邀请函列表
+ */
+- (void)getInvitationInfo
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    
+    [CCClientRequest addParamToDic:params];
+    
+    //配置参数，用户解析对象
+    NSMutableDictionary *systemParams = [@{kJSONSerializing_Key_Sign:@"invitations",kJSONSerializing_Model_Sign:@"YAInvitationObject"} mutableCopy];
+    //end
+    
+    self.requestMethodName = HOME_INVITATIONINFO_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:systemParams methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  9.1. 获取回答详情
+ *
+ *  @param answerId 问题id
+ */
+- (void)getAnswerInfoWithAnswerId:(NSString *)answerId
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:answerId==nil?@"":answerId forKey:@"answer_id"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = ANSWER_DETAIL_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  提交评论或追问 (追问就是一种有目标用户的特殊的评论)
+ *
+ *  @param answerId     回答id
+ *  @param content      内容
+ *  @param commentId    被回复的评论id，没有时填0
+ *  @param chaseFlag    是否是追问
+ */
+- (void)submitCommitWithAnswerId:(NSString *)answerId
+                         content:(NSString *)content
+                       commentId:(NSString *)commentId
+                       chaseFlag:(NSString *)chaseFlag
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:answerId==nil?@"0":answerId forKey:@"answer_id"];
+    [params setObject:content forKey:@"content"];
+    [params setObject:commentId==nil?@"0":commentId forKey:@"comment_id"];
+    [params setObject:chaseFlag forKey:@"chase_flag"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = SUBMIT_COMMENT_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  提交回答
+ *
+ *  @param questionId 问题id
+ *  @param answerId   非0时是更新某个回答
+ *  @param content    提交的回答内容
+ *  @param imagePath  图片文件路径 可能为空
+ *  @param anonymous  1表示匿名回答, 0表示不匿名
+ */
+- (void)submitAnswerWithQuestionId:(NSString *)questionId
+                          answerId:(NSString *)answerId
+                           content:(NSString *)content
+                         imagePath:(NSString *)imagePath
+                         anonymous:(NSString *)anonymous
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:questionId==nil?@"0":questionId forKey:@"question_id"];
+    [params setObject:answerId==nil?@"0":answerId forKey:@"answer_id"];
+    [params setObject:content forKey:@"content"];
+    [params setObject:imagePath==nil?@"":imagePath forKey:@"images"];
+    [params setObject:anonymous==nil?@"0":anonymous forKey:@"anonymous"];
+    
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = SUBMIT_ANSWER_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  标签详情
+ *
+ *  @param fieldName 标签名字
+ *  @param exclusions 要排除的id列表 ,分割
+ */
+- (void)markDetailWithFieldName:(NSString *)fieldName
+                     exclusions:(NSString *)exclusions
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:fieldName forKey:@"field_name"];
+    [params setObject:YAPAGE_MAX_SIZE forKey:@"max_size"];
+    [params setObject:exclusions==nil?@"":exclusions forKey:@"exclusion"];
+    
+    [CCClientRequest addParamToDic:params];
+    
+    if (exclusions != nil && [exclusions length] > 0) {
+        self.requestMethodName = MARK_DETAILMORE_METHOD;
+    }
+    else {
+        self.requestMethodName = MARK_DETAIL_METHOD;
+    }
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  评论列表
+ *
+ *  @param answerId     回答id
+ *  @param exclusionIds 要排除的id，用逗号分隔
+ */
+- (void)commentListWithAnswerId:(NSString *)answerId
+                   exclusionIds:(NSString *)exclusionIds
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:answerId forKey:@"answer_id"];
+    [params setObject:YAPAGE_MAX_SIZE forKey:@"max_size"];
+    [params setObject:exclusionIds == nil ? @"" : exclusionIds forKey:@"exclusion"];
+    
+    [CCClientRequest addParamToDic:params];
+    
+    //配置参数，用户解析对象
+    NSMutableDictionary *systemParams = [@{kJSONSerializing_Key_Sign:@"comments",kJSONSerializing_Model_Sign:@"YACommentObject",kJSONSerializing_OtherDic_Sign:@(YES)} mutableCopy];
+    //end
+    
+    self.requestMethodName = COMMENT_LIST_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:systemParams methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  获取用户的关注列表
+ */
+- (void)getFocusList
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [CCClientRequest addParamToDic:params];
+    
+    //配置参数，用户解析对象
+    NSMutableDictionary *systemParams = [NSMutableDictionary dictionary];
+    //添加本地缓存
+    [systemParams setValue:[@(YES) stringValue] forKey:kResponseModel_LocalSave_Sign];
+    //缓存策略
+    [systemParams setValue:@(MMRequestReturnCacheDataWhenFailed) forKey:kResponseModel_CachePolicy_Sign];
+    //end
+    
+    self.requestMethodName = FOCUS_LIST_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:systemParams methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  获取积分列表
+ *
+ *  @param questionId 问题id，为0时候表示去问编辑的积分列表
+ */
+- (void)getScoreListWithQuestionId:(NSString *)questionId
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setValue:questionId==nil?@"0":questionId forKey:@"question_id"];
+    [CCClientRequest addParamToDic:params];
+    
+    //配置参数，用户解析对象
+    NSMutableDictionary *systemParams = [NSMutableDictionary dictionary];
+    //添加本地缓存
+    [systemParams setValue:[@(YES) stringValue] forKey:kResponseModel_LocalSave_Sign];
+    //缓存策略
+    [systemParams setValue:@(MMRequestReturnCacheDataWhenFailed) forKey:kResponseModel_CachePolicy_Sign];
+    //不检查用户是否登录
+    [systemParams setValue:[@(YES) stringValue] forKey:kRequestModel_NoCheckLogin_Sign];
+    //end
+    
+    self.requestMethodName = SCORE_LIST_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:systemParams methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  设置问题悬赏积分
+ *
+ *  @param questionId 问题id
+ *  @param score      设置的积分值
+ */
+- (void)setQuestionScoreWithQuestionId:(NSString *)questionId
+                                 score:(NSString *)score
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setValue:questionId==nil?@"0":questionId forKey:@"question_id"];
+    [params setValue:score==nil?@"0":score forKey:@"reward_score"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = SCORE_SET_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  删除某个回答
+ *
+ *  @param answerId 回答详情
+ */
+- (void)deleteAnswerWithAnswerId:(NSString *)answerId
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setValue:answerId forKey:@"answer_id"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = DELETE_ANSWER_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  设置评论权限
+ *
+ *  @param answerId          回答id
+ *  @param commentPermission 0-允许任何人评论 1-允许我关注的人评论 2-关闭评论
+ */
+- (void)setCommentPermissionWithAnswerId:(NSString *)answerId
+                       commentPermission:(NSString *)commentPermission
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setValue:answerId forKey:@"answer_id"];
+    [params setValue:commentPermission forKey:@"comment_permission"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = COMMENT_PERMISSION_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  删除评论
+ *
+ *  @param commentId 评论id
+ */
+- (void)deleteCommentWithCommentId:(NSString *)commentId
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setValue:commentId==nil?@"0":commentId forKey:@"comment_id"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = DELETE_COMMENT_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  举报评论
+ *
+ *  @param commentId     评论id
+ *  @param reportContent 举报内容
+ */
+- (void)reportCommentWithCommentId:(NSString *)commentId
+                     reportContent:(NSString *)reportContent
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setValue:commentId==nil?@"0":commentId forKey:@"comment_id"];
+    [params setValue:reportContent forKey:@"content"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = REPORT_COMMENT_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  提交提问
+ *
+ *  @param askObject 提问内容对象
+ */
+- (void)submitAskWithEditAskObject:(YAEditAskObject *)askObject
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setValue:askObject.content forKey:@"content"];
+    [params setValue:askObject.ask_description==nil?@"":askObject.ask_description forKey:@"description"];
+    [params setValue:askObject.imagePath==nil?@"":askObject.imagePath forKey:@"images"];
+    [params setValue:askObject.invite_users==nil?@"":askObject.invite_users forKey:@"invite_users"];
+    [params setValue:askObject.reward_score==nil?@"0":askObject.reward_score forKey:@"reward_score"];
+    [params setValue:askObject.fields forKey:@"fields"];
+    [CCClientRequest addParamToDic:params];
+    
+    //配置参数，用户解析对象
+    NSMutableDictionary *systemParams = [@{kJSONSerializing_Key_Sign:@"invited_users",kJSONSerializing_Model_Sign:@"YAAskInvitedUserObject"} mutableCopy];
+    //end
+    
+    self.requestMethodName = SUBMIT_ASK_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:systemParams methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  采纳某个回答
+ *
+ *  @param answerId 回答id
+ */
+- (void)adoptAnswerWithAnswerId:(NSString *)answerId
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setValue:answerId forKey:@"answer_id"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = ADOPT_ANSWER_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  点赞回答
+ *
+ *  @param answerId 回答id
+ *  @param praiseFlag 点赞标记 1表示点赞  0表示取消点赞
+ */
+- (void)praiseFlagWithAnswerId:(NSString *)answerId
+                    praiseFlag:(NSString *)praiseFlag
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setValue:answerId forKey:@"answer_id"];
+    [params setValue:praiseFlag forKey:@"zan_flag"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = PRAISE_ANSWER_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  点赞评论
+ *
+ *  @param commentId  评论id
+ *  @param praiseFlag 1表示点赞  0表示取消点赞
+ */
+- (void)praiseCommentWithCommentId:(NSString *)commentId
+                        praiseFlag:(NSString *)praiseFlag
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setValue:commentId forKey:@"comment_id"];
+    [params setValue:praiseFlag forKey:@"zan_flag"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = PRAISE_COMMENT_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  发起同问
+ *
+ *  @param questionId   问题id
+ *  @param togetherFlag 1同问 0取消同问
+ */
+- (void)togetherQuestionWithQuestionId:(NSString *)questionId
+                          togetherFlag:(NSString *)togetherFlag
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setValue:questionId forKey:@"question_id"];
+    [params setValue:togetherFlag forKey:@"star_flag"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = TOGETHER_QUESTION_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  提醒待回答用户
+ *
+ *  @param invitationId 邀请人id
+ */
+- (void)remindPersonWithInvitationId:(NSString *)invitationId
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setValue:invitationId forKey:@"invitation_id"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = REMIND_INVITATION_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  收藏某个回答
+ *
+ *  @param answerId       回答id
+ *  @param collectionFlag 1表示收藏  0表示取消收藏
+ */
+- (void)collectionAnswerWithAnswerId:(NSString *)answerId
+                      collectionFlag:(NSString *)collectionFlag
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setValue:answerId forKey:@"answer_id"];
+    [params setValue:collectionFlag forKey:@"star_flag"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = COLLECTION_ANSWER_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  邀请用户回答问题
+ *
+ *  @param questionId 问题id
+ *  @param users      用户 ,号分割
+ */
+- (void)inviteUsersAnswerWithQuestionId:(NSString *)questionId
+                                  users:(NSString *)users
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setValue:questionId forKey:@"question_id"];
+    [params setValue:users forKey:@"users"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = QUESTION_INVITEUSER_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  创建打赏订单
+ *
+ *  @param answerId 回答 id
+ *  @param amount   打赏金额
+ *  @param payType  0-微信app支付 1-支付宝
+ */
+- (void)createAnswerRewardAnswerId:(NSString *)answerId
+                            amount:(NSString *)amount
+                           payType:(NSInteger)payType
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setValue:answerId forKey:@"answer_id"];
+    [params setValue:amount forKey:@"amount"];
+    [params setValue:@(payType) forKey:@"pay_type"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = CREATEANSWER_REWARD_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+#pragma mark ----------------------------------------------------------------------------
+#pragma mark - 用户个人中心
+
+/**
+ *  他的个人中心
+ *
+ *  @param userId 用户id
+ */
+- (void)heCenterInfoWithUserId:(NSString *)userId
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setValue:userId forKey:@"user_id"];
+    [CCClientRequest addParamToDic:params];
+    
+    //配置参数，用户解析对象
+    NSMutableDictionary *systemParams = [@{kJSONSerializing_Key_Sign:@"user",kJSONSerializing_Model_Sign:@"YAHeUserCenterObject"} mutableCopy];
+    //end
+    
+    self.requestMethodName = HECENTER_INFO_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:systemParams methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  举报用户
+ *
+ *  @param userId 用户id
+ *  @param reportContent 举报内容
+ */
+- (void)reportUserWithUserId:(NSString *)userId
+           reportContent:(NSString *)reportContent
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setValue:userId forKey:@"user_id"];
+    [params setValue:reportContent forKey:@"content"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = REPORT_USER_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  1.7.	关注用户
+ *
+ *  @param userId    关注用户
+ *  @param focusFlag 是否关注 1关注, 0取消关注
+ */
+- (void)focusUserWithUserId:(NSString *)userId
+                  focusFlag:(NSString *)focusFlag
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setValue:userId forKey:@"user_id"];
+    [params setValue:focusFlag forKey:@"focus_ta"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = FOCUS_USER_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  获取用户的提问列表
+ *
+ *  @param requestData 请求的对象
+ *  @param exclusionIds 要排除的id，用逗号分隔
+ */
+- (void)getUserQuestionListWithRequestData:(id)requestData
+                              exclusionIds:(NSString *)exclusionIds
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:YAPAGE_MAX_SIZE forKey:@"max_size"];
+    [params setValue:requestData forKey:@"user_id"];
+    [params setValue:exclusionIds forKey:@"exclusion"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = USER_QUESTIONLIST_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  获取用户的回答列表
+ *
+ *  @param requestData 请求的对象
+ *  @param exclusionIds 要排除的id，用逗号分隔
+ */
+- (void)getUserAnswerListWithRequestData:(id)requestData
+                            exclusionIds:(NSString *)exclusionIds
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:YAPAGE_MAX_SIZE forKey:@"max_size"];
+    [params setValue:requestData forKey:@"user_id"];
+    [params setValue:exclusionIds forKey:@"exclusion"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = USER_ANSWERLIST_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  获取用户的同问列表
+ *
+ *  @param requestData 请求的对象
+ *  @param exclusionIds 要排除的id，用逗号分隔
+ */
+- (void)getUserTogetherQuestionListWithRequestData:(id)requestData
+                                      exclusionIds:(NSString *)exclusionIds
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:YAPAGE_MAX_SIZE forKey:@"max_size"];
+    [params setValue:requestData forKey:@"user_id"];
+    [params setValue:exclusionIds forKey:@"exclusion"];
+    [CCClientRequest addParamToDic:params];
+    
+    //配置参数，用户解析对象
+    NSMutableDictionary *systemParams = [@{kJSONSerializing_Key_Sign:@"answers",kJSONSerializing_Model_Sign:@"YAUserQuestionObject",kJSONSerializing_OtherDic_Sign:@(YES)} mutableCopy];
+    //end
+    
+    self.requestMethodName = USER_TOGETHERQUESTION_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:systemParams methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  获取用户的共同好友
+ *
+ *  @param requestData 请求的对象
+ *  @param exclusionIds 要排除的id，用逗号分隔
+ */
+- (void)getSameFocusUserListWithRequestData:(id)requestData
+                               exclusionIds:(NSString *)exclusionIds
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:YAPAGE_MAX_SIZE forKey:@"max_size"];
+    [params setValue:requestData forKey:@"user_id"];
+    [params setValue:exclusionIds forKey:@"exclusion"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = USER_SAMEFOCUSUSER_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  获取用户的收藏列表
+ *
+ *  @param requestData 请求的对象
+ *  @param exclusionIds 要排除的id，用逗号分隔
+ */
+- (void)getUserCollectionListWithRequestData:(id)requestData
+                                exclusionIds:(NSString *)exclusionIds
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:YAPAGE_MAX_SIZE forKey:@"max_size"];
+    [params setValue:exclusionIds forKey:@"exclusion"];
+    [CCClientRequest addParamToDic:params];
+    
+    //配置参数，用户解析对象
+    NSMutableDictionary *systemParams = [@{kJSONSerializing_Key_Sign:@"answers",kJSONSerializing_Model_Sign:@"YAUserQuestionObject",kJSONSerializing_OtherDic_Sign:@(YES)} mutableCopy];
+    //end
+    
+    self.requestMethodName = USER_COLLECTIONLIST_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:systemParams methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  待回答问题列表
+ */
+- (void)getUserNeedAnswerList
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [CCClientRequest addParamToDic:params];
+    
+    //配置参数，用户解析对象
+    NSMutableDictionary *systemParams = [@{kJSONSerializing_Key_Sign:@"questions",kJSONSerializing_Model_Sign:@"YANeedAnswerObject",kJSONSerializing_OtherDic_Sign:@(YES)} mutableCopy];
+    //end
+    
+    self.requestMethodName = NEED_ANSWERLIST_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:systemParams methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  得到自己的个人信息
+ */
+- (void)getMyUserInfo
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [CCClientRequest addParamToDic:params];
+    
+    //配置参数，用户解析对象
+    NSMutableDictionary *systemParams = [@{kJSONSerializing_Key_Sign:@"user",kJSONSerializing_Model_Sign:@"YAMeUserCenterObject"} mutableCopy];
+    //end
+    
+    self.requestMethodName = MEINFO_CENTER_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:systemParams methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  获取自己的关注信息
+ *
+ *  @param focusDirection 0-我关注的 1-关注我的
+ */
+- (void)userFocusInfoWithFocusDirection:(NSString *)focusDirection
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setValue:focusDirection forKey:@"focus_direction"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = USER_FOCUS_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  获得城市列表
+ */
+- (void)getCityList
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = CITYLIST_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  获取系统领域分类信息
+ */
+- (void)getFieldInfo
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [CCClientRequest addParamToDic:params];
+    
+    //配置参数，用户解析对象
+    NSMutableDictionary *systemParams = [@{kJSONSerializing_Key_Sign:@"data",kJSONSerializing_Model_Sign:@"YAEditMarkObject"} mutableCopy];
+    //end
+    
+    self.requestMethodName = FIELDINFO_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:systemParams methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  设置用户信息
+ *
+ *  @param headPath     头像服务端路径
+ *  @param planArray    档期
+ *  @param otherDataDic 其他的资料，比如昵称，单位等
+ */
+- (void)setUserInfoWithHeadPath:(NSString *)headPath
+                      planArray:(NSArray *)planArray
+                   otherDataDic:(NSDictionary *)otherDataDic
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setValue:headPath?headPath:@"" forKey:@"path"];
+    [otherDataDic enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
+        [params setValue:obj forKey:key];
+    }];
+    if (planArray == nil || [planArray count] == 0) {
+        [params setValue:@"" forKey:@"busy"];
+    }
+    else {
+        [params setValue:[planArray JSONStringWithOptions:JKSerializeOptionValidFlags error:nil] forKey:@"busy"];
+    }
+    [CCClientRequest addParamToDic:params];
+    
+    //配置参数，用户解析对象
+    NSMutableDictionary *systemParams = [@{kJSONSerializing_Key_Sign:@"user",kJSONSerializing_Model_Sign:@"YAUser"} mutableCopy];
+    //end
+    
+    self.requestMethodName = SETUSERINFO_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:systemParams methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  设置稍后回答
+ *
+ *  @param invitationId    邀请id
+ *  @param scheduleSeconds 多少秒之后回答
+ */
+- (void)scheduleAnswerWithInvitationId:(NSString *)invitationId
+                       scheduleSeconds:(NSTimeInterval)scheduleSeconds
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setValue:invitationId forKey:@"invitation_id"];
+    [params setValue:[@(scheduleSeconds) stringValue] forKey:@"schedule_seconds"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = SCHEDULEANSWER_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+#pragma mark ----------------------------------------------------------------------------
+#pragma mark - 消息中心
+
+/**
+ *  获取我的通知类消息
+ *
+ *  @param exclusionIds 要排除的id，用逗号分隔
+ *  @param listType     //0-系统通知 1-消息 7-打赏
+ */
+- (void)getNotificationListWithExclusionIds:(NSString *)exclusionIds
+                                   listType:(NSInteger)listType
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setValue:YAPAGE_MAX_SIZE forKey:@"max_size"];
+    [params setValue:exclusionIds forKey:@"exclusion"];
+    [params setValue:[NSString stringWithFormat:@"%ld",(long)listType] forKey:@"type"];
+    [CCClientRequest addParamToDic:params];
+    
+    //配置参数，用户解析对象
+    NSMutableDictionary *systemParams = [@{kJSONSerializing_Key_Sign:@"notifications",kJSONSerializing_Model_Sign:@"YAMessageCenterPushObject",kJSONSerializing_OtherDic_Sign:@(YES)} mutableCopy];
+    //end
+    
+    self.requestMethodName = NOTIFICATIONLIST_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:systemParams methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  获取我的邀请类消息
+ *
+ *  @param exclusionIds 要排除的id，用逗号分隔
+ */
+- (void)getInvitationListWithExclusionIds:(NSString *)exclusionIds
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:YAPAGE_MAX_SIZE forKey:@"max_size"];
+    [params setValue:exclusionIds forKey:@"exclusion"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = NOTIINVATEMESSAGE_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  获取我的追问类消息
+ *
+ *  @param exclusionIds 要排除的id，用逗号分隔
+ */
+- (void)getChaseNotificationListWithExclusionIds:(NSString *)exclusionIds
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:YAPAGE_MAX_SIZE forKey:@"max_size"];
+    [params setValue:exclusionIds forKey:@"exclusion"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = NOTICHASELIST_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  得到消息中心 新消息个数
+ */
+- (void)getMessageCenterNewCount
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = MESSAGECENTER_NEWCOUNT_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+#pragma mark ----------------------------------------------------------------------------
+#pragma mark - 去问
+
+/**
+ *  搜索标签
+ *
+ *  @param text 标签文字
+ */
+- (void)searchFieldsWithText:(NSString *)text
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setValue:text forKey:@"keyword"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = MARK_SEARCH_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  搜索用户
+ *
+ *  @param text 文字
+ *  @param exclusionIds 要排除的id，用逗号分隔
+ */
+- (void)searchUsersWithText:(NSString *)text
+               exclusionIds:(NSString *)exclusionIds
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setValue:text?:@"" forKey:@"keyword"];
+    [params setObject:YAPAGE_MAX_SIZE forKey:@"max_size"];
+    [params setValue:exclusionIds forKey:@"exclusion"];
+    [CCClientRequest addParamToDic:params];
+    
+    //配置参数，用户解析对象
+    NSMutableDictionary *systemParams = [@{kJSONSerializing_Key_Sign:@"users",kJSONSerializing_Model_Sign:@"YAInvitePersonObject",kJSONSerializing_OtherDic_Sign:@(YES)} mutableCopy];
+    //end
+    
+    self.requestMethodName = USER_SEARCH_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:systemParams methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  获取问题的推荐标签
+ *
+ *  @param questionTitle 问题内容
+ *  @param description   问题补充说明
+ */
+- (void)getRecommendedFieldsWithQuestionTitle:(NSString *)questionTitle
+                                  description:(NSString *)description
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setValue:description?:@"" forKey:@"description"];
+    [params setObject:questionTitle forKey:@"content"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = RECOMMENDFIELDS_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+#pragma mark ----------------------------------------------------------------------------
+#pragma mark - 去答
+
+/**
+ *  获取去答问题列表
+ *
+ *  @param type       0-推荐 1-高分 2-最新
+ *  @param exclusionIds 客户端当前查看的所有id列表，逗号分隔
+ */
+- (void)getGoAnswerListWithType:(NSString *)type
+                   exclusionIds:(NSString *)exclusionIds
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:type forKey:@"filter"];
+    [params setObject:YAPAGE_MAX_SIZE forKey:@"max_size"];
+    [params setValue:exclusionIds forKey:@"exclusion"];
+    [CCClientRequest addParamToDic:params];
+    
+    //配置参数，用户解析对象
+    NSMutableDictionary *systemParams = [@{kRequestModel_NoCheckLogin_Sign:@(YES)} mutableCopy];
+    //end
+    
+    self.requestMethodName = GOANSWERLIST_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:systemParams methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+#pragma mark ----------------------------------------------------------------------------
+#pragma mark - 设置
+
+/**
+ *  用户退出登录
+ */
+- (void)userLoginOut
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = USER_LOGINOUT_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  得到推送开关设置
+ */
+- (void)getPushOnOff
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = PUSHONOFF_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  获取第三方账号绑定状态
+ */
+- (void)getOtherAccountInfo
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = GETACCOUNTINFO_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  绑定第三方账号
+ *
+ *  @param bindFlag     0-取消绑定， 1-去绑定
+ *  @param bindType     0-微信 1-支付宝
+ *  @param weiXinOpenId open id
+ *  @param accessToken  微信或者微博访问授权码
+ *  @param alipayAccount 支付宝账号
+ */
+- (void)bindOtherAccountWithBindFlag:(NSInteger)bindFlag
+                            bindType:(NSInteger)bindType
+                        weiXinOpenId:(NSString *)weiXinOpenId
+                         accessToken:(NSString *)accessToken
+                       alipayAccount:(NSString *)alipayAccount
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setValue:[NSString stringWithFormat:@"%d",(int)bindFlag] forKey:@"bind_flag"];
+    [params setValue:[NSString stringWithFormat:@"%d",(int)bindType] forKey:@"bind_type"];
+    [params setValue:weiXinOpenId?:@"" forKey:@"weixin_open_id"];
+    [params setValue:accessToken?:@"" forKey:@"access_token"];
+    [params setValue:alipayAccount?:@"" forKey:@"alipay_account"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = SETACCOUNTINFO_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  推送设置
+ *
+ *  @param invitationStr 邀请函推送开关
+ *  @param answerStr     回答提醒推送开关
+ *  @param rewardStr     打赏提醒推送开关
+ */
+- (void)setPushOnOffWithInvitationStr:(NSString *)invitationStr
+                            answerStr:(NSString *)answerStr
+                            rewardStr:(NSString *)rewardStr
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setValue:invitationStr?invitationStr:@"0" forKey:@"invitation"];
+    [params setValue:answerStr?answerStr:@"0" forKey:@"answer"];
+    [params setValue:rewardStr?rewardStr:@"0" forKey:@"answer_reward"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = SETPUSHONOFF_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  提交反馈
+ *
+ *  @param contentStr 反馈内容
+ *  @param contactStr 联系方式
+ */
+- (void)feedbackWithContentStr:(NSString *)contentStr
+                    contactStr:(NSString *)contactStr
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setValue:contentStr?:@"0" forKey:@"content"];
+    [params setValue:contactStr?:@"0" forKey:@"contact"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = FEEDBACK_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  检查更新
+ */
+- (void)checkAppUpdate
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:[MetaData getLongOSVersion] forKey:@"device_os"];
+    [params setObject:[MetaData getCurrVer] forKey:@"app_version"];
+    [CCClientRequest addParamToDic:params];
+    
+    //配置参数，用户解析对象
+    NSMutableDictionary *systemParams = [@{kRequestModel_NoCheckLogin_Sign:@(YES)} mutableCopy];
+    //end
+    
+    self.requestMethodName = CHECKAPPUPDATE_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:systemParams methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  扫一扫
+ *
+ *  @param QRstring 扫描得到的结果
+ */
+- (void)scanQRCodeWithQRString:(NSString *)QRstring
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:QRstring forKey:@"qr_code"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = SCANQRCODE_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  分享成功后调用服务端
+ *
+ *  @param questionId 问题Id 可能为空
+ *  @param answerId   回答Id 可能为空
+ *  @param userId     用户Id 可能为空
+ *  @param channelName     分享渠道
+ */
+- (void)notifyShareWithQuestionId:(NSString *)questionId
+                         answerId:(NSString *)answerId
+                           userId:(NSString *)userId
+                      channelName:(NSString *)channelName
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:questionId?:@"" forKey:@"question_id"];
+    [params setObject:answerId?:@"" forKey:@"answer_id"];
+    [params setObject:userId?:@"" forKey:@"user_id"];
+    [params setObject:channelName?:@"" forKey:@"channel_name"];
+    [CCClientRequest addParamToDic:params];
+    
+    if (questionId && [questionId length] > 0) {
+        self.requestMethodName = SHAREQUESTIONNOTIFY_METHOD;
+    }
+    else if (answerId && [answerId length] > 0) {
+        self.requestMethodName = SHAREANSWERNOTIFY_METHOD;
+    }
+    else if (userId && [userId length] > 0) {
+        self.requestMethodName = SHAREUSERNOTIFY_METHOD;
+    }
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  调试信息上传
+ *
+ *  @param debugsMessage 调试信息
+ */
+- (void)deviceLogWithDebugsMessage:(NSString *)debugsMessage
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:debugsMessage?:@"" forKey:@"content"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = DEVICE_LOG_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+#pragma mark ----------------------------------------------------------------------------
+#pragma mark - 语音通话
+
+/**
+ *  获取通话列表
+ *
+ *  @param exclusions 所有id列表，逗号分
+ */
+- (void)getVoiceCallListWithExclusions:(NSString *)exclusions
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:YAPAGE_MAX_SIZE forKey:@"max_size"];
+    [params setValue:exclusions forKey:@"exclusion"];
+    [CCClientRequest addParamToDic:params];
+    
+    //配置参数，用户解析对象
+    NSMutableDictionary *systemParams = [@{kJSONSerializing_Key_Sign:@"voice_calls",kJSONSerializing_Model_Sign:@"YAVoiceCallObject",kJSONSerializing_OtherDic_Sign:@(YES)} mutableCopy];
+    //end
+    
+    self.requestMethodName = VOICECALLLIST_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:systemParams methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  准备通话
+ *
+ *  @param userId 用户id
+ */
+- (void)prepareToCallWithUserId:(NSString *)userId
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:userId?:@"" forKey:@"ytx_voip_account"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = PREPARETOCALL_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  开始通话
+ *
+ *  @param userId 用户id
+ */
+- (void)callingWithUserId:(NSString *)userId
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:userId?:@"" forKey:@"ytx_voip_account"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = CALLING_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  获取有问平台的用户列表信息
+ *
+ *  @param userIds 容联云通讯的用户id ,号分割
+ */
+- (void)getYouWenUserDataWithYtxUserIds:(NSString *)ytxUserIds
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setValue:ytxUserIds forKey:@"ytx_voip_accounts"];
+    [CCClientRequest addParamToDic:params];
+    
+    //配置参数，用户解析对象
+    NSMutableDictionary *systemParams = [@{kJSONSerializing_Key_Sign:@"users",kJSONSerializing_Model_Sign:@"YAChatPersonObject"} mutableCopy];
+    //end
+    
+    self.requestMethodName = GETUSERLIST_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:systemParams methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  校验进入热点群聊
+ *
+ *  @param hotspotId 热点id
+ */
+- (void)checkHotspotGroupWithHotspotId:(NSString *)hotspotId
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setValue:[NSString stringWithFormat:@"%@",hotspotId] forKey:@"hotspot_id"];
+    [CCClientRequest addParamToDic:params];
+    
+    self.requestMethodName = CHECKHOTSPOT_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:nil methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+/**
+ *  上传图片
+ *
+ *  @param imageUrlPath 图片地址
+ */
+- (void) imageUpavatarWithImageUrlPath:(NSString *)imageUrlPath
+{
+    NSMutableDictionary *systemParams = [[NSMutableDictionary alloc] init];
+    [systemParams setObject:imageUrlPath forKey:@"file"];
+    
+    [self fileUploadWithLocalPath:imageUrlPath fileType:@"image" systemParams:systemParams];
+}
+
+/**
+ *  完善用户信息
+ *
+ *  @param nickName  用户昵称
+ *  @param headPhoto 用户头像
+ *  @param sexNumber 用户性别
+ */
+- (void)setUserInfoWithNickName:(NSString *)nickName
+                      headPhoto:(NSString *)headPhoto
+                      sexNumber:(NSInteger)sexNumber
+{
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    [params setObject:nickName forKey:@"nick_name"];
+    [params setObject:headPhoto == nil ? @"" : headPhoto forKey:@"head_photo"];
+    [params setObject:@(sexNumber) forKey:@"sex"];
+    
+    [CCClientRequest addParamToDic:params];
+    
+    //配置参数，用户解析对象
+    NSMutableDictionary *systemParams = [@{kJSONSerializing_Key_Sign:@"user",kJSONSerializing_Model_Sign:@"YAUser"} mutableCopy];
+    //end
+    
+    self.requestMethodName = REGISTER_USERINFO_METHOD;
+    [self.superRequest beginPostRequestDataWithParam:params systemParams:systemParams methodName:self.requestMethodName freshTime:FreshTimeTypeOne];
+}
+
+#pragma mark -
+#pragma mark - 系统参数
+
++ (void) addParamToDic:(NSMutableDictionary *) params
+{
+//    //添加请求结尾参数
+//    //[params setValue:XinHuaAppDelegate.userObject?XinHuaAppDelegate.userObject.u_id:@"0" forKey:@"userID"];
+//    //[params setValue:ClientApp forKey:@"clientApp"];
+//    [params setValue:[MetaData getSid] forKeyPath:@"clientBundleID"];
+//    //[params setValue:ClientType forKey:@"clientType"];//1是iOS
+//    [params setValue:[MetaData getCurrVer] forKey:@"clientVer"];//客户端版本(1.0.0)
+//    [params setValue:@"337" forKey:@"clientMarket"];//第三方市场渠道
+//    [params setValue:[MetaData getLongOSVersion] forKey:@"clientOS"];//客户端系统(eg.ios7.0)
+//    [params setValue:[MetaData getPlatform] forKey:@"clientModel"];//客户端机型(eg.iphone4s)
+//    
+//    NETWORK_TYPE netType = [NetWorkObserver dataNetworkTypeFromStatusBar];
+//    NSLog(@"%d",netType);
+//    
+//    NSString *netString = @"none";
+//    
+//    switch (netType)
+//    {
+//        case NETWORK_TYPE_NONE:
+//            
+//            break;
+//            
+//        case NETWORK_TYPE_2G:
+//            netString = @"2g";
+//            break;
+//            
+//        case NETWORK_TYPE_3G:
+//            netString = @"3g";
+//            break;
+//            
+//        case NETWORK_TYPE_WIFI:
+//            netString = @"wifi";
+//            break;
+//            
+//        default:
+//            break;
+//    }
+//    
+//    [params setValue:netString forKey:@"clientNet"];  //1:wifi,2:2g,3:3g)
+//    //是否是流量模式 0关闭 1开启
+// 
+//    //[params setValue:[XinHuaAppDelegate.appModel noWifiHavePhoto] && [NetWorkObserver isSetImageViewVisible] == NO ? @"1" : @"0" forKey:@"showpic"];
+//    [params setValue:[MetaData getToken] forKey:@"clientToken"];//推送token
+//    [params setValue:[[NSUserDefaults standardUserDefaults] objectForKey:@"clientID"]==nil?@"":[[NSUserDefaults standardUserDefaults] objectForKey:@"clientID"] forKey:@"clientId"];//推送token
+//    [params setValue:[[MetaData getUid] URLEncodedString] forKey:@"clientLable"];//uuid
+//    //[params setValue:ClientDev forKey:@"clientDev"];//测试环境或者正式环境
+//    [params setValue:[MetaData getIsJail] forKey:@"clientPrison"];//是否越狱
+//    [params setValue:[[MetaData getResolution] objectAtIndex:0] forKey:@"clientWidth"];//手机分辨率width
+//    [params setValue:[[MetaData getResolution] objectAtIndex:1] forKey:@"clientHeight"];//手机分辨率height
+//    //[params setValue:[NSString stringWithFormat:@"%f",XinHuaAppDelegate.myLocation.longitude] forKey:@"clientLongitude"];//经度坐标
+//    //[params setValue:[NSString stringWithFormat:@"%f",XinHuaAppDelegate.myLocation.latitude] forKey:@"clientLatitude"];//纬度坐标
+//    //[params setValue:XinHuaAppDelegate.province forKey:@"province"];//省份
+//    //[params setValue:XinHuaAppDelegate.address forKey:@"address"];//详细地址
+//    [params setValue:[MetaData getNowSecondsDate] forKeyPath:@"clientDate"];//客户端当前时间戳
+//    //end
+//    
+////    NSLog(@"-------->%@",params);
+}
+
+@end

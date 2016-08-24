@@ -1,0 +1,67 @@
+//
+//  UIViewController+Route.m
+//  Garfield-Common
+//
+//  Created by jack zhou on 06/17/14.
+//
+//
+
+#import "UIViewController+Route.h"
+#import "JLRoutes.h"
+#import "NSString+URLEncoding.h"
+#import <objc/runtime.h>
+
+@implementation UIViewController (Route)
+
++ (void)registerRoute:(NSString *)route withHandler:(BOOL (^)(NSDictionary *))handler
+{
+    [[JLRoutes globalRoutes] addRoute:route handler:handler];
+}
+
+- (NSString *)generateRouteWithStrings:(NSString *)route, ...
+{
+    va_list list;
+    va_start(list, route);
+    
+    NSMutableArray *strArray = [NSMutableArray arrayWithArray:[route componentsSeparatedByString:@"/"]];
+    while (YES) {
+        NSString *string = va_arg(list, NSString *);
+        if (!string) {
+            break;
+        }
+        [strArray enumerateObjectsUsingBlock:^(NSString *item, NSUInteger idx, BOOL *stop) {
+            if ([string isKindOfClass:[NSString class]] && [item rangeOfString:@":"].location != NSNotFound) {
+                strArray[idx] = [string stringByReplacingOccurrencesOfString:@"/" withString:@" ∕ "];
+                *stop = YES;
+            }
+        }];
+    }
+    va_end(list);
+    return [strArray componentsJoinedByString:@"/"];
+}
+
+- (void)triggerRoute:(NSString *)route withParameters:(NSDictionary *)parameters
+{
+    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"D997875A45FBA591DF2B31746AEFD022:/%@", [route URLEncodedString]]];
+    NSMutableDictionary *parametersWithSelf = [NSMutableDictionary dictionaryWithDictionary:parameters];
+    __weak typeof(self) weakSelf = self;
+    parametersWithSelf[@"controller"] = weakSelf;
+    [[JLRoutes globalRoutes] routeURL:url withParameters:parametersWithSelf];
+}
+
+/**
+ *  调用路由
+ *
+ *  @param route      路由
+ *  @param parameters 参数
+ */
++ (void)triggerRoute:(NSString *)route withParameters:(NSDictionary *)parameters
+{
+    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"D997875A45FBA591DF2B31746AEFD022:/%@", [route URLEncodedString]]];
+    NSMutableDictionary *parametersWithSelf = [NSMutableDictionary dictionaryWithDictionary:parameters];
+    __weak typeof(self) weakSelf = self;
+    parametersWithSelf[@"controller"] = weakSelf;
+    [[JLRoutes globalRoutes] routeURL:url withParameters:parametersWithSelf];
+}
+
+@end

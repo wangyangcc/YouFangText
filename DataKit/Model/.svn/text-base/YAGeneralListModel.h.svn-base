@@ -1,0 +1,53 @@
+//
+//  YAGeneralListModel.h
+//  YouAsk
+//
+//  Created by wangyangyang on 15/7/6.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+#import "MMCellObjectProtocol.h"
+
+@interface YAGeneralListModel : NSObject
+
+/**
+ *  顶部标题
+ */
+@property (nonatomic, copy) NSString *navTitle;
+
+/**
+ *  隐藏导航栏
+ */
+@property (nonatomic, assign) BOOL hideNavBar;
+
+/**
+ *  cell 名称
+ */
+@property (nonatomic, copy) NSString *cellNameString;
+
+/**
+ *  用于请求的data 可能是一个id值，也可能是一个对象
+ */
+@property (nonatomic, strong) id requestData;
+
+/**
+ *  网络请求的方法
+ */
+@property (nonatomic, assign) SEL requestSelector;
+
+/**
+ *  界面显示出来的时候 刷新界面
+ */
+@property (nonatomic, assign) BOOL updateWhenWiewWillAppear;
+
+/**
+ *  没有数据时候要显示的图片
+ */
+@property (nonatomic, copy) NSString *noDataIconImage;
+
+@property (copy) void (^onDidSelectRow)(id<MMCellObjectProtocol> rowObject);
+
+@property (copy) void (^onViewWillDisappear)(void); 
+
+@end

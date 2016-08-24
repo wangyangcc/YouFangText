@@ -1,0 +1,69 @@
+//
+//  MMFontLabel.m
+//  iOS8Project
+//
+//  Created by LDhai on 15/4/4.
+//  Copyright (c) 2015年 LDhai. All rights reserved.
+//
+
+#import "MMFontLabel.h"
+#import "MetaData.h"
+
+@implementation MMFontLabel
+
+//- (void) awakeFromNib
+//{
+//    self.font = self.font;
+//    self.text = self.text;
+//    self.verticalAlignment = MMVerticalAlignmentMiddle;
+//}
+//
+//- (void) setText:(NSString *)text
+//{
+//    self.verticalAlignment = MMVerticalAlignmentMiddle;
+//    [super setText:text];
+//}
+//
+//- (void) setFont:(UIFont *)font
+//{
+//    UIFont *mmFont = [UIFont fontWithName:MMFontName size:font.pointSize];
+//    [super setFont:mmFont];
+//}
+//
+//-  (void)setVerticalAlignment:(MMVerticalAlignment)verticalAlignment {
+//    _verticalAlignment = verticalAlignment;
+//    [self setNeedsDisplay];
+//}
+//
+//- (CGRect)textRectForBounds:(CGRect)bounds limitedToNumberOfLines:(NSInteger)numberOfLines
+//{
+//    if (self.isLimitedToNumberOfLines == NO) {
+//        return [super textRectForBounds:bounds limitedToNumberOfLines:numberOfLines];
+//    }
+//    CGRect textRect = [super textRectForBounds:bounds limitedToNumberOfLines:numberOfLines];
+//    switch (self.verticalAlignment) {
+//        case MMVerticalAlignmentTop:
+//            textRect.origin.y = bounds.origin.y;
+//            break;
+//        case MMVerticalAlignmentBottom:
+//            textRect.origin.y = bounds.origin.y + bounds.size.height - textRect.size.height;
+//            break;
+//        case MMVerticalAlignmentMiddle:
+//            // Fall through.
+//        default:
+//            textRect.origin.y = bounds.origin.y + (bounds.size.height - textRect.size.height) / 2.0;
+//    }
+//    return textRect;
+//}
+//
+//-(void)drawTextInRect:(CGRect)requestedRect
+//{
+//    if (self.isLimitedToNumberOfLines == NO) {
+//        [super drawTextInRect:requestedRect];
+//        return;
+//    }
+//    CGRect actualRect = [self textRectForBounds:requestedRect limitedToNumberOfLines:self.numberOfLines];
+//    [super drawTextInRect:actualRect];
+//}
+
+@end

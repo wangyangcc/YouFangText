@@ -1,0 +1,33 @@
+//
+//  YAAskDetailTagsView.h
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/3.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+
+@interface YAAskDetailTagsView : UIView
+
+/**
+ *  标签名字数组
+ */
+@property (nonatomic, strong, readonly) NSArray *tagsArray;
+
+/**
+ *  是否可以点击tag,默认不可点击
+ */
+@property (nonatomic) BOOL tagCanTap;
+
+/**
+ *  更新详情页标签内容
+ *
+ *  @param tagsArray 数组
+ */
+- (void)updateContentWithTagsArray:(NSArray *)tagsArray;
+
+
++ (CGFloat)getHeightWithTagsArray:(NSArray *)tagsArray;
+
+@end

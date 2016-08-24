@@ -1,0 +1,134 @@
+//
+//  YAAskDetailTagsView.m
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/3.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import "YAAskDetailTagsView.h"
+#import "YAAskMarkButton.h"
+
+@interface YAAskDetailTagsView ()
+
+@property (nonatomic, strong) NSArray *tagsArray;
+
+@end
+
+@implementation YAAskDetailTagsView
+
+- (instancetype)initWithFrame:(CGRect)frame
+{
+    self = [super initWithFrame:frame];
+    if (self) {
+        self.backgroundColor = [UIColor whiteColor];
+        self.userInteractionEnabled = NO;
+        
+    }
+    return self;
+}
+
+- (void)awakeFromNib
+{
+    self.userInteractionEnabled = self.tagCanTap;
+    self.backgroundColor = [UIColor whiteColor];
+}
+
+#pragma mark - Public Method
+
+- (void)setTagCanTap:(BOOL)tagCanTap
+{
+    _tagCanTap = tagCanTap;
+    self.userInteractionEnabled = tagCanTap;
+}
+
+/**
+ *  更新详情页标签内容
+ *
+ *  @param tagsArray 数组
+ */
+- (void)updateContentWithTagsArray:(NSArray *)tagsArray
+{
+    if (tagsArray == nil) {
+        return;
+    }
+    
+    for (UIView *button in self.subviews) {
+        [button setHidden:YES];
+    }
+
+    self.tagsArray = [tagsArray copy];
+    NSInteger index_x = 0;
+    NSInteger index_y = 0;
+    for (NSInteger index = 0; index < [_tagsArray count]; index ++) {
+        UIButton *button = (UIButton *)[self viewWithTag:100 + index];
+        BOOL isButtonNew = NO;
+        if (button == nil) {
+            isButtonNew = YES;
+            button = [UIButton buttonWithType:UIButtonTypeCustom];
+            [button setBackgroundImage:[[UIImage imageNamed:@"btn_tag_unchecked"] resizableImageWithCapInsets:UIEdgeInsetsMake(10, 10, 10, 10)] forState:UIControlStateNormal];
+            [button setBackgroundImage:[[UIImage imageNamed:@"btn_tag_checked"] resizableImageWithCapInsets:UIEdgeInsetsMake(10, 10, 10, 10)] forState:UIControlStateSelected];
+            
+            [button setTitleColor:[UIColor colorWithHexString:@"#797e89"] forState:UIControlStateNormal];
+            [button setTitleColor:[UIColor whiteColor] forState:UIControlStateSelected];
+            button.titleLabel.font = [UIFont systemFontOfSize:YAAskMarkButtonFontSize];
+            button.tag = 100 + index;
+            [button addTarget:self action:@selector(tagButtonTaped:) forControlEvents:UIControlEventTouchUpInside];
+            [self addSubview:button];
+            
+        }
+        button.hidden = NO;
+        [button setTitle:_tagsArray[index] forState:UIControlStateNormal];
+        
+        struct YAAskMarkWidthLimits buttonWidthLimits = [YAAskMarkButton getWidthWithName:_tagsArray[index] maxWidth:(ScreenWidth - 40)];
+        
+        if ((index_x + buttonWidthLimits.minWidth) - (ScreenWidth - 40) > 0.00000001) {
+            index_y ++;
+            index_x = 0;
+        }
+        if (isButtonNew) {
+            //此种情况 为 此行最后一个button压缩宽度的情况
+            if ((index_x + buttonWidthLimits.matchingWidth) - (ScreenWidth - 40) > 0.00000001 && index_x != 0) {
+                //此种情况 不在根据最小值计算 而是根据此行还剩下多少空间计算
+                [button autoSetDimensionsToSize:CGSizeMake(ScreenWidth - 40 - index_x, 25)];
+            }
+            else {
+                [button autoSetDimensionsToSize:CGSizeMake(buttonWidthLimits.matchingWidth, 25)];
+            }
+            [button autoPinEdgeToSuperviewEdge:ALEdgeLeading withInset:index_x];
+            [button autoPinEdgeToSuperviewEdge:ALEdgeTop withInset:15.5 + (25 + 10)*index_y];
+        }
+        index_x += (buttonWidthLimits.matchingWidth + LeftSpage);
+    }
+}
+
++ (CGFloat)getHeightWithTagsArray:(NSArray *)tagsArray
+{
+    if (tagsArray == nil || [tagsArray count] == 0) {
+        return 0;
+    }
+    NSInteger index_x = 0;
+    NSInteger index_y = 0;
+    for (NSInteger index = 0; index < [tagsArray count]; index ++) {
+        struct YAAskMarkWidthLimits buttonWidthLimits = [YAAskMarkButton getWidthWithName:tagsArray[index] maxWidth:(ScreenWidth - 40)];
+        
+        if ((index_x + buttonWidthLimits.minWidth) - (ScreenWidth - 40) > 0.00000001) {
+            index_y ++;
+            index_x = 0;
+        }
+        index_x += (buttonWidthLimits.matchingWidth + LeftSpage);
+    }
+    return 30 + (index_y + 1) * (25 + 10) - 10;
+}
+
+#pragma mark - Private Method
+
+- (void)tagButtonTaped:(UIButton *)tagButton
+{
+    if (self.tagCanTap == NO) {
+        return;
+    }
+    [UIViewController triggerRoute:OPEN_MARKDETAIL_PAGE withParameters:@{@"markName" : [tagButton titleForState:UIControlStateNormal]}];
+}
+
+@end

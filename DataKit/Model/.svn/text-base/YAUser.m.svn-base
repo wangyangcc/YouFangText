@@ -1,0 +1,62 @@
+//
+//  YAUser.m
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/23.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import "YAUser.h"
+
+@implementation YAUser
+
+//代理方法，返回本类属性和字典取值属性相对应的关系
++ (NSDictionary *)JSONKeyPathsByPropertyKey {
+    return @{
+             @"userId": @"id",
+             @"userName":@"name",
+             @"nickName":@"nick_name",
+             @"loginFeature":@"login_feature",
+             @"headPhoto":@"head_photo",
+             @"verifiedType":@"verified_type",
+             
+             @"ytx_token": @"ytx_sub_token",
+             @"ytx_voip_account" : @"ytx_voip_account",
+             @"ytx_voip_password" : @"ytx_voip_password",
+             
+             @"awaitUserName" : @"user_name",
+             };
+}
+
+#pragma mark - MMCellObjectProtocol
+
+- (CGFloat)cellHeightForObject
+{
+    return 0.0f;
+}
+
+- (NSString *)getObjectId
+{
+    return self.userId ? [self.userId stringValue] : @"0";
+}
+
+/**
+ *  得到可用的用户名
+ *
+ *  @return 用户名
+ */
+- (NSString *)getAvailableUserName
+{
+    if (self.nickName && [self.nickName length] > 0) {
+        return self.nickName;
+    }
+    if (self.userName && [self.userName length] > 0) {
+        return self.userName;
+    }
+    else if (self.awaitUserName && [self.awaitUserName length] > 0) {
+        return self.awaitUserName;
+    }
+    return @"";
+}
+
+@end

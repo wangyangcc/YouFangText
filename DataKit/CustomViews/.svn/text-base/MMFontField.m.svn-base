@@ -1,0 +1,24 @@
+//
+//  MMFontField.m
+//  XinHuaPublish
+//
+//  Created by wangyangyang on 15/4/12.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import "MMFontField.h"
+
+@implementation MMFontField
+
+- (void) awakeFromNib
+{
+    self.font = [UIFont fontWithName:MMFontName size:self.font.pointSize];
+}
+
+- (void) setFont:(UIFont *)font
+{
+    UIFont *mmFont = [UIFont fontWithName:MMFontName size:font.pointSize];
+    [super setFont:mmFont];
+}
+
+@end

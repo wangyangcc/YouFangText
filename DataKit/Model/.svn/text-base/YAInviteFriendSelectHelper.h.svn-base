@@ -1,0 +1,70 @@
+//
+//  YAInviteFriendSelectHelper.h
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/11.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+
+@class YAInvitePersonObject;
+@protocol YAInviteFriendSelectDelegate;
+
+/**
+ *  邀请好友的选择帮助类
+ */
+@interface YAInviteFriendSelectHelper : NSObject
+
+@property (nonatomic, strong, readonly) NSMutableArray *invateArray;
+
+/**
+ *  当此tag被设置为nil，时候，会清空数据
+ */
+@property (nonatomic, weak) id weakTag;
+
+/**
+ *  当选择的用户数量 变化时的通知类
+ */
+@property (nonatomic, weak) id<YAInviteFriendSelectDelegate> viewController;
+
++ (YAInviteFriendSelectHelper *)shareHelper;
+
+/**
+ *  判断是否选择了某个用户
+ *
+ *  @param object 用户对象
+ *
+ *  @return 结果
+ */
+- (BOOL)isSelectedWithObject:(YAInvitePersonObject *)object;
+
+/**
+ *  添加一个用户
+ *
+ *  @param object 用户对象
+ */
+- (void)addPersonWithObject:(YAInvitePersonObject *)object;
+
+/**
+ *  根据用户id移除用户
+ *
+ *  @param objectId 用户id
+ */
+- (void)removePersonWithObjectId:(NSString *)objectId;
+
+/**
+ *  移除所有用户
+ */
+- (void)removeAllData;
+
+@end
+
+@protocol YAInviteFriendSelectDelegate <NSObject>
+
+/**
+ *  选择的用户数量变化时，通知更新
+ */
+- (void)updateSelectedPersonNumber;
+
+@end

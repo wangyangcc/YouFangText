@@ -1,0 +1,30 @@
+//
+//  MMFontLabel.h
+//  iOS8Project
+//
+//  Created by LDhai on 15/4/4.
+//  Copyright (c) 2015年 LDhai. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+
+typedef enum
+{
+    MMVerticalAlignmentTop = 0, // default
+    MMVerticalAlignmentMiddle,
+    MMVerticalAlignmentBottom,
+} MMVerticalAlignment;
+
+@interface MMFontLabel : UILabel
+
+/**
+ *  是否根据行数调整label显示文本的基准
+ */
+@property (nonatomic, assign) BOOL isLimitedToNumberOfLines;
+
+/**
+ *  根据行数调整label显示文本的基准
+ */
+@property (nonatomic) MMVerticalAlignment verticalAlignment;
+
+@end

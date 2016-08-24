@@ -1,0 +1,54 @@
+//
+//  ScrollViewTopDefaultNavView.h
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/5.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+#import "ScrollViewTopNavProtocol.h"
+
+@class MMColor;
+@protocol ScrollViewVCTopChoiceProtocol;
+@interface ScrollViewTopDefaultNavView : UIView <ScrollViewTopNavProtocol>
+
+//滑块颜色
+@property (nonatomic, strong) UIColor *sliderBlockColor;
+
+//标题默认颜色
+@property (nonatomic, strong) UIColor *defaultTitleColor;
+
+//标题选中颜色
+@property (nonatomic, strong) UIColor *selectedTitleColor;
+
+//缩放侯的滑块颜色
+@property (nonatomic, strong) UIColor *subSliderBlockColor;
+
+//导航栏背景颜色
+@property (nonatomic, strong) UIColor *navbackcolor;
+
+//滑块的高度
+@property (nonatomic) CGFloat huaHeight;
+
+//滑块是否满
+@property (nonatomic) BOOL isScale;
+
+@property (nonatomic) CGFloat labelZoomNum;//文字放大比例
+@property (nonatomic) BOOL changeLabelColorWhenScroll;//滑动过程中改变滑动条颜色
+@property (nonatomic) MMColor *selectLabelColor;
+@property (nonatomic) MMColor *unSelectLabelColor;
+
+@end
+
+@interface MMColor : NSObject
+
+@property (nonatomic,readonly) CGFloat red;
+@property (nonatomic,readonly) CGFloat green;
+@property (nonatomic,readonly) CGFloat blue;
+
++ (MMColor *)colorWithRed:(CGFloat)red green:(CGFloat)green blue:(CGFloat)blue;
+
++ (UIColor *)twoColorShadowWith:(MMColor *)oneColor twoColor:(MMColor *)twoColor scale:(float)scale;
+
+@end

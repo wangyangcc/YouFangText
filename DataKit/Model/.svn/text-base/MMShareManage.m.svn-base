@@ -1,0 +1,277 @@
+//
+//  XCShareManage.m
+//  WoZaiXianChang
+//
+//  Created by wangyangyang on 14-9-6.
+//  Copyright (c) 2014年 wangyangyang. All rights reserved.
+//
+
+#import "MMShareManage.h"
+#import "UMSocialSnsService.h"
+#import "SDWebImageManager.h"
+#import "UMSocialWechatHandler.h"
+#import "CCClientRequest.h"
+
+@interface MMShareManage () <MMClientRequestCallBackDelegate>
+{
+    UIImageView *downloadWeiboImageView; /**< 用户下载微博分享图片的view */
+    UIImageView *downloadWeixinImageView; /**< 用户下载微信分享图片的view */
+    
+    NSString *shareSucceedUrl;/**< 分享成功后的url */
+}
+
+@property (nonatomic, retain) MMShareObject *currentObject;
+@property (nonatomic, strong) CCClientRequest *doneRequest;/**< 分享成功后的回调 */
+
+@end
+
+@implementation MMShareManage
+
++ (MMShareManage *)shareManage
+{
+    static dispatch_once_t once;
+    static id instance;
+    dispatch_once(&once, ^{
+        instance = [self new];
+    });
+    return instance;
+}
+
+- (UIImage *)defaultIconImage
+{
+    //判断封面图是否下载完，如果没有设置默认图片
+    NSData *imgData = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"114@2x" ofType:@"png"]];
+    UIImage *iconImage = [UIImage imageWithData:imgData scale:[[UIScreen mainScreen] scale]];
+    //end
+    return iconImage;
+}
+
+- (void)downloadShareWeiboImageWithUrl:(NSString *)shareImageUrl
+{
+    if (downloadWeiboImageView == nil) {
+        downloadWeiboImageView = [UIImageView new];
+    }
+    downloadWeiboImageView.image = nil;
+    [downloadWeiboImageView setImageWithURL:[NSURL URLWithString:shareImageUrl] placeholderImage:nil];
+}
+
+- (void)downloadShareWeixinImageWithUrl:(NSString *)shareImageUrl
+{
+    if (downloadWeixinImageView == nil) {
+        downloadWeixinImageView = [UIImageView new];
+    }
+    downloadWeixinImageView.image = nil;
+    [downloadWeixinImageView setImageWithURL:[NSURL URLWithString:shareImageUrl] placeholderImage:nil];
+}
+
+- (void)shareWithObject:(MMShareObject *)shareObject
+{
+    if (shareObject == nil) {
+        return;
+    }
+    self.currentObject = shareObject;
+    
+    [UMSocialWechatHandler setWXAppId:WeiChatKey appSecret:WeiChatSecretKey url:shareObject.shareWeixinObject.shareUrl];
+    //[self setSinaAndTengWithShareImage];
+    
+    [UMSocialSnsService presentSnsIconSheetView:MMAppDelegate.nav
+                                         appKey:YouMengKey
+                                      shareText:@""
+                                     shareImage:[self defaultIconImage]
+                                shareToSnsNames:MMAppDelegate.appModel.snsPlatformNames
+                                       delegate:self];
+}
+
+#pragma mark -
+#pragma mark - 内部方法
+
+- (void)setSinaAndTengWithShareImage
+{
+    //避免因为连续设置nil，新浪，腾讯出现空白图片问题
+    UIImage *shareImg = nil;
+    if (downloadWeiboImageView.image) {
+        shareImg = downloadWeiboImageView.image;
+    }
+
+    if ( shareImg == nil ) {
+        shareImg = [self defaultIconImage];
+        [UMSocialData defaultData].extConfig.sinaData.shareImage = shareImg;
+        [UMSocialData defaultData].extConfig.tencentData.shareImage = shareImg;
+        [UMSocialData defaultData].extConfig.sinaData.shareImage = nil;
+        [UMSocialData defaultData].extConfig.tencentData.shareImage = nil;
+        [UMSocialData defaultData].shareImage = nil;
+        
+        return;
+    }
+    //新浪
+    {
+        [UMSocialData defaultData].extConfig.sinaData.shareImage = shareImg;
+    }
+    //end
+//    //腾讯
+//    {
+//        [UMSocialData defaultData].extConfig.tencentData.shareImage = shareImage;
+//    }
+//    //end
+}
+
+#pragma mark -
+#pragma mark - 微信分享结果回调
+
+-(void) onResp:(BaseResp*)resp
+{
+    //判断是否分享成功
+    if (resp.errCode != 0) {
+        return;
+    }
+    //end
+    UMSocialResponseEntity *entify = [UMSocialResponseEntity new];
+    entify.viewControllerType = UMSViewControllerShareEdit;
+    entify.responseCode = UMSResponseCodeSuccess;
+    if (self.currentObject.shareWeixinObject.shareType == nil) {
+        self.currentObject.shareWeixinObject.shareType = UMShareToWechatTimeline;
+    }
+    entify.data = @{[NSString stringWithFormat:@"%@",_currentObject.shareWeixinObject.shareType]:[NSString stringWithFormat:@"%@",_currentObject.shareWeixinObject.shareType]};
+    [self didFinishGetUMSocialDataInViewController:entify];
+}
+
+#pragma mark -
+#pragma mark - 友盟协议回调
+
+-(void)didCloseUIViewController:(UMSViewControllerType)fromViewControllerType
+{
+
+}
+
+-(void)didFinishGetUMSocialDataInViewController:(UMSocialResponseEntity *)response
+{
+    
+    if (response.viewControllerType != UMSViewControllerShareEdit) {
+        return;
+    }
+    if (response.responseCode != UMSResponseCodeSuccess) {
+        return;
+    }
+    //设置分享用的数据
+    NSString *shareStatisticsChannel;
+    @try {
+        NSString *shareChannel = [[response.data allKeys] objectAtIndex:0];
+        NSArray *umShareChannel = MMAppDelegate.appModel.snsPlatformNames;
+        NSArray *xwxcShareChannel = @[CHANNEL_WEIXIN_FRIEND,CHANNEL_WEIXIN_TIMELINE,CHANNEL_SINA];
+        if ([umShareChannel containsObject:shareChannel]) {
+            shareStatisticsChannel = [xwxcShareChannel objectAtIndex:[umShareChannel indexOfObject:shareChannel]];
+        }
+        else {
+            shareStatisticsChannel = @"";
+        }
+    }
+    @catch (NSException *exception) {
+        
+    }
+    @finally {
+        if (self.c_delegate && [self.c_delegate respondsToSelector:@selector(shareObjectSucceedWithChannelName:shareUrl:)]) {
+            [self.c_delegate shareObjectSucceedWithChannelName:shareStatisticsChannel shareUrl:shareSucceedUrl];
+        }
+        if (self.currentObject.shareAnswerId == nil && self.currentObject.shareQuestionId == nil && self.currentObject.shareUserId == nil) {
+            return;
+        }
+        [self.doneRequest notifyShareWithQuestionId:self.currentObject.shareQuestionId
+                                           answerId:self.currentObject.shareAnswerId
+                                             userId:self.currentObject.shareUserId
+                                        channelName:shareStatisticsChannel];
+        
+    }
+}
+
+-(void)didSelectSocialPlatform:(NSString *)platformName withSocialData:(UMSocialData *)socialData
+{
+    //微信好友
+    if ([platformName isEqualToString:UMShareToWechatSession]) {
+        MMSharePlatformObject *weixinObj = self.currentObject.shareWeixinObject;
+        [UMSocialData defaultData].extConfig.title = weixinObj.title;
+        socialData.shareText = weixinObj.describe;
+        socialData.shareImage = downloadWeixinImageView.image?:[self defaultIconImage];
+        
+        self.currentObject.shareWeixinObject.shareType = UMShareToWechatSession;
+        
+        //无视频时候
+        [[UMSocialData defaultData].extConfig.wechatSessionData.urlResource setResourceType:UMSocialUrlResourceTypeDefault url:weixinObj.shareUrl];
+        
+        shareSucceedUrl = weixinObj.shareUrl;
+    }
+    //微信朋友圈
+    else if ([platformName isEqualToString:UMShareToWechatTimeline])
+    {
+        MMSharePlatformObject *weixinObj = self.currentObject.shareWeixinObject;
+        [UMSocialData defaultData].extConfig.title =weixinObj.title;
+        socialData.shareText = weixinObj.describe;
+        socialData.shareImage = downloadWeixinImageView.image?:[self defaultIconImage];
+        
+        self.currentObject.shareWeixinObject.shareType = UMShareToWechatTimeline;
+        //无视频时候
+        [[UMSocialData defaultData].extConfig.wechatTimelineData.urlResource setResourceType:UMSocialUrlResourceTypeDefault url:weixinObj.shareUrl];
+        
+        shareSucceedUrl = weixinObj.shareUrl;
+    }
+    //微博
+    else if ([platformName isEqualToString:UMShareToSina])
+    {
+        MMSharePlatformObject *weiboObj = self.currentObject.shareWeiboObject;
+        socialData.shareText = weiboObj.describe;
+        socialData.shareImage = downloadWeiboImageView.image?:nil;
+    
+        shareSucceedUrl = self.currentObject.shareWeiboObject.shareUrl;
+    }
+}
+
+#pragma mark - MMClientRequestCallBackDelegate
+
+- (void)requestDidSuccessCallBack:(CCClientRequest *)clientRequest
+{
+    NSDictionary *resultDic = [clientRequest.responseObject firstObject];
+    //用户增加积分之后的通知
+    NSString *promptMsg = resultDic[@"prompt_msg"];
+    if (promptMsg && [promptMsg length] > 0) {
+        [SVProgressHUD showSuccessWithStatus:promptMsg];
+    }
+    //end
+}
+
+- (void)requestDidFailCallBack:(CCClientRequest *)clientRequest
+{
+
+}
+
+#pragma mark - getters and setters
+
+- (CCClientRequest *)doneRequest
+{
+    if (_doneRequest == nil) {
+        _doneRequest = [CCClientRequest new];
+        _doneRequest.c_delegate = self;
+    }
+    return _doneRequest;
+}
+
+@end
+
+@implementation MMShareObject
+
+@end
+
+@implementation MMSharePlatformObject
+
+//代理方法，返回本类属性和字典取值属性相对应的关系
++ (NSDictionary *)JSONKeyPathsByPropertyKey {
+    return @{
+
+             @"describe" : @"desc",
+             
+             @"imageUrl" : @"img",
+             
+             @"shareUrl" : @"url",
+             
+             };
+}
+
+@end

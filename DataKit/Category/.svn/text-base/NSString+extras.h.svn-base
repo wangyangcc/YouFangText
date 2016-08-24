@@ -1,0 +1,30 @@
+//
+//  NSString+extras.h
+//  YouAsk
+//
+//  Created by wangyangyang on 15/7/21.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+
+@interface NSString (extras)
+
+- (BOOL)isEmpty;
+
+- (NSString*)stringFromMD5;
+
+- (NSString*)urlEncodedString;
+
+- (NSString*)urlDecodedString;
+
+- (NSString*)stringByAppendingQueryParameters:(NSDictionary *)queryParameters;
+
+- (NSString*)stringByReplacingURLEncoding;
+
+- (NSArray*)keyValueArrayFromQuery;
+
+//时间显示内容
++ (NSString *)getDateDisplayString:(long long) miliSeconds;
+
+@end

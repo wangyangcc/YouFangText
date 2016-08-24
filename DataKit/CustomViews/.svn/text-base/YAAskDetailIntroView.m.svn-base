@@ -1,0 +1,206 @@
+//
+//  YAAskDetailIntroView.m
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/3.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import "YAAskDetailIntroView.h"
+#import "NSString+labelSize.h"
+
+@interface YAAskDetailIntroView ()
+{
+    UILabel *contentLabel;
+    UIButton *moreButton;
+    UIImageView *contentImage;
+    NSLayoutConstraint *labelHeightLayoutConstraint;
+    
+    NSString *imagePathString;
+    
+    UITapGestureRecognizer *viewTapedGesture;
+}
+
+@property (nonatomic, assign) BOOL isDisplayMoreButton;
+
+@end
+
+@implementation YAAskDetailIntroView
+
+- (instancetype)initWithFrame:(CGRect)frame
+{
+    self = [super initWithFrame:frame];
+    if (self) {
+        [self myInit];
+    }
+    return self;
+}
+
+- (void)awakeFromNib
+{
+    [self myInit];
+}
+
+- (void)myInit
+{
+    self.backgroundColor = MMRGBColor(244, 244, 246);
+    
+    contentLabel = [[UILabel alloc] initWithFrame:CGRectZero];
+    contentLabel.backgroundColor = MMRGBColor(244, 244, 246);
+    contentLabel.textColor = [UIColor colorWithHexString:@"#a0a5b1"];
+    contentLabel.font = [UIFont systemFontOfSize:14];
+    contentLabel.numberOfLines = 0;
+//    contentLabel.backgroundColor = [UIColor lightGrayColor];
+//    contentLabel.textColor = [UIColor blackColor];
+    [self addSubview:contentLabel];
+    [contentLabel autoPinEdgeToSuperviewEdge:ALEdgeLeading withInset:9];
+    [contentLabel autoPinEdgeToSuperviewEdge:ALEdgeTrailing withInset:8];
+    [contentLabel autoPinEdgeToSuperviewEdge:ALEdgeTop withInset:11];
+    labelHeightLayoutConstraint = [contentLabel autoSetDimension:ALDimensionHeight toSize:18 + 25];
+    
+    contentImage = [[UIImageView alloc] init];
+    contentImage.hidden = YES;
+    contentImage.backgroundColor = [UIColor whiteColor];
+    contentImage.contentMode = UIViewContentModeScaleAspectFill;
+    contentImage.clipsToBounds = YES;
+    contentImage.userInteractionEnabled = YES;
+    UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(imageTaped)];
+    [contentImage addGestureRecognizer:tap];
+    [self addSubview:contentImage];
+    [contentImage autoSetDimensionsToSize:CGSizeMake((280 - 17)*ScreenWidth/320, 158 * ScreenWidth/320)];
+    [contentImage autoPinEdgeToSuperviewEdge:ALEdgeBottom withInset:12];
+    [contentImage autoAlignAxisToSuperviewAxis:ALAxisVertical];
+    
+    moreButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    [moreButton setImage:[UIImage imageNamed:@"btn_askDetail_more"] forState:UIControlStateNormal];
+    moreButton.userInteractionEnabled = NO;
+    moreButton.contentVerticalAlignment = UIControlContentVerticalAlignmentBottom;
+    moreButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentRight;
+    [self addSubview:moreButton];
+    [moreButton autoSetDimensionsToSize:CGSizeMake(20, 20)];
+    [moreButton autoPinEdgeToSuperviewEdge:ALEdgeBottom withInset:3];
+    [moreButton autoPinEdgeToSuperviewEdge:ALEdgeTrailing withInset:3];
+    
+    UITapGestureRecognizer *tapGes = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(viewTaped)];
+    viewTapedGesture = tapGes;
+    [self addGestureRecognizer:tapGes];
+}
+
+/**
+ *  更新内容
+ */
+- (void)updateWithIntroStr:(NSString *)introStr
+                 imagePath:(NSString *)imagePath
+             fullImagePath:(NSString *)fullImagePath
+                 haveImage:(BOOL)haveImage
+               displayMore:(BOOL)displayMore
+{
+    if ((introStr == nil || introStr.length <= 0) && imagePath == nil) {
+        moreButton.hidden = YES;
+        self.backgroundColor = [UIColor clearColor];
+        return;
+    }
+    if (imagePath == nil) {
+        imagePath = @"";
+    }
+    if (introStr == nil) {
+        introStr = @"";
+    }
+    imagePathString = fullImagePath?:imagePath;
+    
+    self.backgroundColor = MMRGBColor(244, 244, 246);
+    contentLabel.text = introStr;
+
+    //更新文本高度
+    CGSize labelSize = [NSString generalLabelSizeWithText:introStr labelSize:CGSizeMake(ScreenWidth - 17 - 40, MAXFLOAT) font:[UIFont systemFontOfSize:14] textColor:[UIColor blackColor]];
+    if (displayMore == NO) {
+        //判断是否是只有图片
+        if (introStr.length <= 0) {
+            labelHeightLayoutConstraint.constant = 1.0f;
+        }
+        else if ((NSInteger)labelSize.height < 21) {
+            labelHeightLayoutConstraint.constant = 19.0f;;
+        }
+        else {
+            labelHeightLayoutConstraint.constant = 36.0f;
+        }
+    }
+    else {
+        labelHeightLayoutConstraint.constant = labelSize.height + 2;
+    }
+    //end
+    
+    //更新内容图片
+    if (displayMore || introStr.length <= 0) {
+        contentImage.hidden = [imagePath length] <= 0;
+        [contentImage setImageWithURL:[imagePath length] <= 0 ? nil : [NSURL URLWithString:imagePath] placeholderImage:[UIImage imageNamed:PlaceHolderImgAnswer]];
+    }
+    else {
+        contentImage.hidden = YES;
+    }
+    //end
+    
+    //更新展开按钮
+    if ((haveImage || (NSInteger)labelSize.height > 39) && introStr.length > 0) {
+        [self addGestureRecognizer:viewTapedGesture];
+        moreButton.hidden = displayMore;
+        self.isDisplayMoreButton = displayMore;
+    }
+    else {
+        [self removeGestureRecognizer:viewTapedGesture];
+        moreButton.hidden = YES;
+    }
+    //end
+}
+
+- (void)viewTaped
+{
+    if (self.c_delegate && [self.c_delegate respondsToSelector:@selector(askDetailIntroViewTaped:)]) {
+        [self.c_delegate askDetailIntroViewTaped:self];
+    }
+}
+
+/**
+ *  图片点击
+ */
+- (void)imageTaped
+{
+    [UIViewController triggerRoute:OPEN_PHOTOBROWSE_PAGE withParameters:@{@"isOnlyBrowse":@(1),@"imageURL":[NSString stringWithFormat:@"%@",imagePathString], @"onDidDeleted":^(void) {}}];
+}
+
+/**
+ *  得到高度
+ *
+ *  @param text   文本
+ *  @param isOpen 是否开启
+ *
+ *  @return 高度值
+ */
++ (CGFloat)getAskDetailIntroViewHeightWithText:(NSString *)text
+                                        isOpen:(BOOL)isOpen
+                                   isHaveImage:(BOOL)isHaveImage
+{
+    if (text == nil) {
+        text = @"";
+    }
+    if ([text length] <= 0 && isHaveImage == NO) {
+        return 0;
+    }
+    CGSize labelSize = [NSString generalLabelSizeWithText:text labelSize:CGSizeMake(ScreenWidth - 17 - 40, MAXFLOAT) font:[UIFont systemFontOfSize:14] textColor:[UIColor blackColor]];
+    if (isOpen == NO) {
+        //判断是否是只有图片
+        if (text.length <= 0 && isHaveImage) {
+            return 25 + 158 * ScreenWidth/320;
+        }
+        if ((NSInteger)labelSize.height < 21) {
+            return 19 + 25;
+        }
+        return 36 + 25;
+    }
+    else {
+        return labelSize.height + 25 + (isHaveImage ? (158 * ScreenWidth/320 + 8): 0) + 2;
+    }
+    return 0;
+}
+
+@end

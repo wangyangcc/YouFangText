@@ -1,0 +1,95 @@
+//
+//  MMCheckAppUpdateHelper.m
+//  YouAsk
+//
+//  Created by wangyangyang on 15/7/14.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import "MMCheckAppUpdateHelper.h"
+#import "CCClientRequest.h"
+
+@interface MMCheckAppUpdateHelper () <MMClientRequestCallBackDelegate,MMAlertManageDelegate>
+
+@property (nonatomic, strong) CCClientRequest *clientRequest;
+@property (nonatomic, copy) NSString *downloadUrl;
+@property (nonatomic, copy) NSString *updateMode;
+
+@end
+
+@implementation MMCheckAppUpdateHelper
+
+- (void)beginCheck
+{
+    [self.clientRequest checkAppUpdate];
+}
+
+#pragma mark - MMClientRequestCallBackDelegate
+
+- (void)requestDidSuccessCallBack:(CCClientRequest *)clientRequest
+{
+    @try {
+        NSDictionary *resultDic = [clientRequest.responseObject firstObject];
+        NSString *newTitle = [resultDic objectForKey:@"lastest_app_version"];
+        
+        NSString *mode = [resultDic objectForKey:@"app_update_mode"];
+        self.updateMode = mode;
+        NSString *url = [resultDic objectForKey:@"lastest_app_url"];
+        self.downloadUrl = url;
+        NSString *content = [resultDic objectForKey:@"modification"];
+        
+        //0-静默模式
+        if ([mode integerValue] == 0) {
+            return;
+        }
+        //1-弹窗提示模式
+        else if ([mode integerValue] == 1) {
+            MMAlertManage *alertManage = [[MMAlertManage alloc] initWithTitle:newTitle message:content delegate:self cancelButtonTitle:@"取消" otherButtonTitles:@"去升级", nil];
+            [alertManage show];
+        }
+        //2-强制升级模式
+        else if ([mode integerValue] == 2) {
+            MMAlertManage *alertManage = [[MMAlertManage alloc] initWithTitle:newTitle message:content delegate:self cancelButtonTitle:nil otherButtonTitles:@"去升级", nil];
+            [alertManage show];
+        }
+    }
+    @catch (NSException *exception) {
+        NSLog(@"MMCheckAppUpdateHelper------解析数据失败");
+    }
+}
+
+- (void)requestDidFailCallBack:(id)clientRequest
+{
+
+}
+
+#pragma mark - MMAlertManageDelegate
+
+- (void)alertView:(MMAlertManage *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
+{
+    //1-弹窗提示模式
+    if ([self.updateMode integerValue] == 1 && alertView.cancelButtonIndex == buttonIndex) {
+        return;
+    }
+    
+    [[UIApplication sharedApplication] openURL:[NSURL URLWithString:self.downloadUrl]];
+    
+    //2-强制升级模式
+    if ([self.updateMode integerValue] == 2) {
+        //强制退出
+        _exit(0);
+    }
+}
+
+#pragma mark - getters and setters
+
+- (CCClientRequest *)clientRequest
+{
+    if (_clientRequest == nil) {
+        _clientRequest = [CCClientRequest new];
+        _clientRequest.c_delegate = self;
+    }
+    return _clientRequest;
+}
+
+@end

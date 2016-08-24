@@ -1,0 +1,23 @@
+//
+//  MMClientRequestCallBackDelegate.h
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/23.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+#import "MMRequestDefine.h"
+
+@protocol MMClientRequestCallBackDelegate <NSObject>
+
+@optional
+
+- (void)requestDidSuccessCallBack:(id)clientRequest;
+
+- (void)requestDidFailCallBack:(id)clientRequest;
+
+- (void)requestLoadCacheCallBack:(id)clientRequest
+                     cachePolicy:(MMRequestCachePolicy)cachePolicy;
+
+@end

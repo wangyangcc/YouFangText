@@ -1,0 +1,128 @@
+//
+//  YAInviteFriendSelectHelper.m
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/11.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import "YAInviteFriendSelectHelper.h"
+#import "YAInviteFriendViewController.h"
+#import "YAInvitePersonObject.h"
+
+@interface YAInviteFriendSelectHelper ()
+
+@property (nonatomic, strong) NSMutableArray *invateArray;
+
+@end
+
+@implementation YAInviteFriendSelectHelper
+
++ (YAInviteFriendSelectHelper *)shareHelper
+{
+    static dispatch_once_t one_t;
+    static YAInviteFriendSelectHelper *_shareHelper;
+    dispatch_once(&one_t, ^{
+        _shareHelper = [[YAInviteFriendSelectHelper alloc] init];
+        _shareHelper.invateArray = [NSMutableArray array];
+    });
+    return _shareHelper;
+}
+
+#pragma mark - public method
+
+/**
+ *  判断是否选择了某个用户
+ *
+ *  @param object 用户对象
+ *
+ *  @return 结果
+ */
+- (BOOL)isSelectedWithObject:(YAInvitePersonObject *)object
+{
+//    //判断是不是默认选择的
+//    if (_defaultSelectedPersonsYtxIds) {
+//        if ([_defaultSelectedPersonsYtxIds containsObject:object.ytx_voip_account]) {
+//            [self.invateArray addObject:object];
+//            [_defaultSelectedPersonsYtxIds removeObject:object.ytx_voip_account];
+//            return YES;
+//        }
+//    }
+    //end
+    NSArray *invateArray = [[YAInviteFriendSelectHelper shareHelper] invateArray];
+    NSPredicate *predicateID = [NSPredicate predicateWithFormat:@"%K == %@",@"userId", [object getObjectId]];
+    NSArray *results = [invateArray filteredArrayUsingPredicate:predicateID];
+    if (results && [results count] >= 1) {
+        return YES;
+    }
+    return NO;
+}
+
+/**
+ *  添加一个用户
+ *
+ *  @param object 用户对象
+ */
+- (void)addPersonWithObject:(YAInvitePersonObject *)object
+{
+    if (object == nil) {
+        return;
+    }
+    [self.invateArray addObject:object];
+    [self.viewController updateSelectedPersonNumber];
+}
+
+/**
+ *  根据用户id移除用户
+ *
+ *  @param objectId 用户id
+ */
+- (void)removePersonWithObjectId:(NSString *)objectId
+{
+    if (objectId == nil) {
+        return;
+    }
+    NSPredicate *predicateID = [NSPredicate predicateWithFormat:@"%K == %@",@"userId", objectId];
+    NSArray *results = [self.invateArray filteredArrayUsingPredicate:predicateID];
+    if (results && [results count] >= 1) {
+        [self.invateArray removeObject:[results firstObject]];
+    }
+    [self.viewController updateSelectedPersonNumber];
+}
+
+/**
+ *  移除所有用户
+ */
+- (void)removeAllData
+{
+    self.invateArray = [NSMutableArray array];
+    self.viewController = nil;
+}
+
+///**
+// *  用户创建群聊时，获取选择的用户
+// */
+//- (NSArray *)getInvateArrayWhenCreateCroup
+//{
+//    //如果默认选择数组里面还有用户，则添加进去
+//    if (_defaultSelectedPersonsYtxIds && [_defaultSelectedPersonsYtxIds count] > 0) {
+//        [_defaultSelectedPersonsYtxIds enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+//            YAInvitePersonObject *seleObj = [YAInvitePersonObject new];
+//            seleObj.ytx_voip_account = obj;
+//            [_invateArray addObject:seleObj];
+//        }];
+//    }
+//    return _invateArray;
+//}
+
+#pragma mark - getters and setters
+
+- (void)setWeakTag:(id)weakTag
+{
+    _weakTag = weakTag;
+    if (weakTag == nil) {
+        [self removeAllData];
+    }
+}
+
+@end

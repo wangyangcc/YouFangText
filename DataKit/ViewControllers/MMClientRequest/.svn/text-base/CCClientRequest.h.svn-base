@@ -1,0 +1,665 @@
+//
+//  CCClientRequest.h
+//  WoZaiXianChang
+//
+//  Created by lcc on 13-9-17.
+//  Copyright (c) 2013年 lcc. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+#import "MMClientRequest.h"
+#import "YAEditAskObject.h"
+
+@interface CCClientRequest : MMClientRequest
+
+/**
+ *  2.1.	注册时获取手机验证码
+ *
+ *  @param phoneNumber 手机号码
+ */
+- (void)getCodeReg:(NSString *)phoneNumber;
+
+/**
+ *  2.5.	修改密码时获取手机验证码
+ *
+ *  @param phoneNumber 手机号码
+ */
+- (void)getCodeCp:(NSString *)phoneNumber;
+
+/**
+ *  用户登录接口
+ *
+ *  @param phone    手机
+ *  @param password 密码
+ *  @param weixinId 微信id
+ *  @param weiboId  微博id
+ *  @param accessToken 接口调用凭证
+ */
+- (void)loginWithPhone:(NSString *)phone
+              password:(NSString *)password
+              weixinId:(NSString *)weixinId
+               weiboId:(NSString *)weiboId
+           accessToken:(NSString *)accessToken;
+/**
+ *  启动app时调用的接口
+ *
+ *  @param userId       用户id
+ *  @param password     密码(服务端给的保存在客户端的)
+ *  @param loginFeature 上次正式登录识别码
+ */
+- (void)appLaunchingAccessWithUserId:(NSString *)userId
+                            password:(NSString *)password
+                        loginFeature:(NSString *)loginFeature;
+
+/**
+ *  通知个推id
+ *
+ *  @param clientId 个推id
+ *  @param userId  用户id
+ */
+- (void)notifyGeTuiClientId:(NSString *)clientId
+                     userId:(NSString *)userId;
+
+/**
+ *  每日签到接口
+ */
+- (void)userEverydaySignIn;
+
+/**
+ *  2.2 注册
+ *
+ *  @param phoneNumber 用户手机号
+ *  @param regCode     验证码
+ *  @param password    密码
+ *  @param invitedCode 邀请码
+ */
+- (void)registerWithPhoneNumber:(NSString *)phoneNumber
+                        regCode:(NSString *)regCode
+                       password:(NSString *)password
+                    invitedCode:(NSString *)invitedCode;
+
+
+/**
+ *  2.6.	修改密码
+ *
+ *  @param phoneNumber 手机号码
+ *  @param cpCode      验证码
+ *  @param password    密码
+ */
+- (void)changePasswordWithPhoneNumber:(NSString *)phoneNumber
+                              cpCode:(NSString *)cpCode
+                             password:(NSString *)password;
+/**
+ *  上传图片
+ *
+ *  @param imageUrlPath 图片地址
+ */
+- (void) imageUpavatarWithImageUrlPath:(NSString *)imageUrlPath;
+
+/**
+ *  完善用户信息
+ *
+ *  @param nickName  用户昵称
+ *  @param headPhoto 用户头像
+ *  @param sexNumber 用户性别
+ */
+- (void)setUserInfoWithNickName:(NSString *)nickName
+                      headPhoto:(NSString *)headPhoto
+                      sexNumber:(NSInteger)sexNumber;
+
+/**
+ *  1.3 文件上传
+ *
+ *  @param localPath 本地的地址
+ *  @param fileType  文件类型，如image,video,audio
+ *  @param systemParams  系统参数
+ */
+- (void)fileUploadWithLocalPath:(NSString *)localPath
+                       fileType:(NSString *)fileType
+                   systemParams:(NSMutableDictionary *)systemParams;
+
+/**
+ *  首页首屏接口
+ *
+ *  @param maxSize 最大个数
+ */
+- (void)homeInfo;
+
+/**
+ *  首页加载更多接口
+ *
+ *  @param maxSize      最大个数
+ *  @param exclusionIds 排除的所有id，用 , 分隔
+ */
+- (void)homeMoreWithExclusionIds:(NSString *)exclusionIds;
+
+#pragma mark ----------------------------------------------------------------------------
+#pragma mark - 问题详情
+
+/**
+ *  问题详情信息
+ *
+ *  @param questionId 问题 id
+ */
+- (void)questionInfoWithQuestionId:(NSString *)questionId;
+
+/**
+ *  获取待回答用户列表
+ *
+ *  @param questionId 问题id
+ */
+- (void)getScheduleListWithQuestionId:(NSString *)questionId;
+
+/**
+ *  4.2. 获取回答列表
+ *
+ *  @param questionId   问题id
+ *  @param exclusionIds 客户端当前查看的所有id列表，逗号分隔
+ */
+- (void)getAnswerListWithQuestionId:(NSString *)questionId
+                       exclusionIds:(NSString *)exclusionIds;
+
+/**
+ *  获取未读邀请函列表
+ */
+- (void)getInvitationInfo;
+
+/**
+ *  9.1. 获取回答详情
+ *
+ *  @param answerId 问题id
+ */
+- (void)getAnswerInfoWithAnswerId:(NSString *)answerId;
+
+/**
+ *  提交评论或追问 (追问就是一种有目标用户的特殊的评论)
+ *
+ *  @param answerId     回答id
+ *  @param content      内容
+ *  @param commentId    被回复的评论id，没有时填0
+ *  @param chaseFlag    是否是追问
+ */
+- (void)submitCommitWithAnswerId:(NSString *)answerId
+                         content:(NSString *)content
+                       commentId:(NSString *)commentId
+                       chaseFlag:(NSString *)chaseFlag;
+
+/**
+ *  提交回答
+ *
+ *  @param questionId 问题id
+ *  @param answerId   非0时是更新某个回答
+ *  @param content    提交的回答内容
+ *  @param imagePath  图片文件路径 可能为空
+ *  @param anonymous  1表示匿名回答, 0表示不匿名
+ */
+- (void)submitAnswerWithQuestionId:(NSString *)questionId
+                          answerId:(NSString *)answerId
+                           content:(NSString *)content
+                         imagePath:(NSString *)imagePath
+                         anonymous:(NSString *)anonymous;
+
+/**
+ *  标签详情
+ *
+ *  @param fieldName 标签名字
+ *  @param exclusions 要排除的id列表 ,分割
+ */
+- (void)markDetailWithFieldName:(NSString *)fieldName
+                     exclusions:(NSString *)exclusions;
+
+/**
+ *  评论列表
+ *
+ *  @param answerId     回答id
+ *  @param exclusionIds 要排除的id，用逗号分隔
+ */
+- (void)commentListWithAnswerId:(NSString *)answerId
+                   exclusionIds:(NSString *)exclusionIds;
+
+/**
+ *  获取用户的关注列表
+ */
+- (void)getFocusList;
+
+
+/**
+ *  获取积分列表
+ *
+ *  @param questionId 问题id，为0时候表示去问编辑的积分列表
+ */
+- (void)getScoreListWithQuestionId:(NSString *)questionId;
+
+/**
+ *  设置问题悬赏积分
+ *
+ *  @param questionId 问题id
+ *  @param score      设置的积分值
+ */
+- (void)setQuestionScoreWithQuestionId:(NSString *)questionId
+                                 score:(NSString *)score;
+
+/**
+ *  删除某个回答
+ *
+ *  @param answerId 回答详情
+ */
+- (void)deleteAnswerWithAnswerId:(NSString *)answerId;
+
+/**
+ *  设置评论权限
+ *
+ *  @param answerId          回答id
+ *  @param commentPermission 0-允许任何人评论 1-允许我关注的人评论 2-关闭评论
+ */
+- (void)setCommentPermissionWithAnswerId:(NSString *)answerId
+                       commentPermission:(NSString *)commentPermission;
+
+/**
+ *  删除评论
+ *
+ *  @param commentId 评论id
+ */
+- (void)deleteCommentWithCommentId:(NSString *)commentId;
+
+/**
+ *  举报评论
+ *
+ *  @param commentId     评论id
+ *  @param reportContent 举报内容
+ */
+- (void)reportCommentWithCommentId:(NSString *)commentId
+                     reportContent:(NSString *)reportContent;
+
+/**
+ *  提交提问
+ *
+ *  @param askObject 提问内容对象
+ */
+- (void)submitAskWithEditAskObject:(YAEditAskObject *)askObject;
+
+/**
+ *  采纳某个回答
+ *
+ *  @param answerId 回答id
+ */
+- (void)adoptAnswerWithAnswerId:(NSString *)answerId;
+
+/**
+ *  点赞回答
+ *
+ *  @param answerId 回答id
+ *  @param praiseFlag 点赞标记 1表示点赞  0表示取消点赞
+ */
+- (void)praiseFlagWithAnswerId:(NSString *)answerId
+                    praiseFlag:(NSString *)praiseFlag;
+
+/**
+ *  点赞评论
+ *
+ *  @param commentId  评论id
+ *  @param praiseFlag 1表示点赞  0表示取消点赞
+ */
+- (void)praiseCommentWithCommentId:(NSString *)commentId
+                        praiseFlag:(NSString *)praiseFlag;
+
+/**
+ *  发起同问
+ *
+ *  @param questionId   问题id
+ *  @param togetherFlag 1同问 0取消同问
+ */
+- (void)togetherQuestionWithQuestionId:(NSString *)questionId
+                          togetherFlag:(NSString *)togetherFlag;
+
+/**
+ *  提醒待回答用户
+ *
+ *  @param invitationId 邀请人id
+ */
+- (void)remindPersonWithInvitationId:(NSString *)invitationId;
+
+/**
+ *  收藏某个回答
+ *
+ *  @param answerId       回答id
+ *  @param collectionFlag 1表示收藏  0表示取消收藏
+ */
+- (void)collectionAnswerWithAnswerId:(NSString *)answerId
+                      collectionFlag:(NSString *)collectionFlag;
+
+/**
+ *  邀请用户回答问题
+ *
+ *  @param questionId 问题id
+ *  @param users      用户 ,号分割
+ */
+- (void)inviteUsersAnswerWithQuestionId:(NSString *)questionId
+                                  users:(NSString *)users;
+
+/**
+ *  创建打赏订单
+ *
+ *  @param answerId 回答 id
+ *  @param amount   打赏金额
+ *  @param payType  0-微信app支付 1-支付宝
+ */
+- (void)createAnswerRewardAnswerId:(NSString *)answerId
+                            amount:(NSString *)amount
+                           payType:(NSInteger)payType;
+
+#pragma mark ----------------------------------------------------------------------------
+#pragma mark - 用户个人中心
+
+/**
+ *  他的个人中心
+ *
+ *  @param userId 用户id
+ */
+- (void)heCenterInfoWithUserId:(NSString *)userId;
+
+/**
+ *  举报用户
+ *
+ *  @param userId 用户id
+ *  @param reportContent 举报内容
+ */
+- (void)reportUserWithUserId:(NSString *)userId
+           reportContent:(NSString *)reportContent;
+
+/**
+ *  1.7.	关注用户
+ *
+ *  @param userId    关注用户
+ *  @param focusFlag 是否关注 1关注, 0取消关注
+ */
+- (void)focusUserWithUserId:(NSString *)userId
+                  focusFlag:(NSString *)focusFlag;
+
+/**
+ *  获取用户的提问列表
+ *
+ *  @param requestData 请求的对象
+ *  @param exclusionIds 要排除的id，用逗号分隔
+ */
+- (void)getUserQuestionListWithRequestData:(id)requestData
+                              exclusionIds:(NSString *)exclusionIds;
+
+/**
+ *  获取用户的回答列表
+ *
+ *  @param requestData 请求的对象
+ *  @param exclusionIds 要排除的id，用逗号分隔
+ */
+- (void)getUserAnswerListWithRequestData:(id)requestData
+                            exclusionIds:(NSString *)exclusionIds;
+
+/**
+ *  获取用户的同问列表
+ *
+ *  @param requestData 请求的对象
+ *  @param exclusionIds 要排除的id，用逗号分隔
+ */
+- (void)getUserTogetherQuestionListWithRequestData:(id)requestData
+                                      exclusionIds:(NSString *)exclusionIds;
+
+/**
+ *  获取用户的共同好友
+ *
+ *  @param requestData 请求的对象
+ *  @param exclusionIds 要排除的id，用逗号分隔
+ */
+- (void)getSameFocusUserListWithRequestData:(id)requestData
+                               exclusionIds:(NSString *)exclusionIds;
+
+/**
+ *  获取用户的收藏列表
+ *
+ *  @param requestData 请求的对象
+ *  @param exclusionIds 要排除的id，用逗号分隔
+ */
+- (void)getUserCollectionListWithRequestData:(id)requestData
+                                exclusionIds:(NSString *)exclusionIds;
+
+/**
+ *  待回答问题列表
+ */
+- (void)getUserNeedAnswerList;
+
+/**
+ *  得到自己的个人信息
+ */
+- (void)getMyUserInfo;
+
+/**
+ *  获取自己的关注信息
+ *
+ *  @param focusDirection 0-我关注的 1-关注我的
+ */
+- (void)userFocusInfoWithFocusDirection:(NSString *)focusDirection;
+
+/**
+ *  获得城市列表
+ */
+- (void)getCityList;
+
+/**
+ *  获取系统领域分类信息
+ */
+- (void)getFieldInfo;
+
+/**
+ *  设置用户信息
+ *
+ *  @param headPath     头像服务端路径
+ *  @param planArray    档期
+ *  @param otherDataDic 其他的资料，比如昵称，单位等
+ */
+- (void)setUserInfoWithHeadPath:(NSString *)headPath
+                      planArray:(NSArray *)planArray
+                   otherDataDic:(NSDictionary *)otherDataDic;
+
+/**
+ *  设置稍后回答
+ *
+ *  @param invitationId    邀请id
+ *  @param scheduleSeconds 多少秒之后回答
+ */
+- (void)scheduleAnswerWithInvitationId:(NSString *)invitationId
+                       scheduleSeconds:(NSTimeInterval)scheduleSeconds;
+
+#pragma mark ----------------------------------------------------------------------------
+#pragma mark - 消息中心
+
+/**
+ *  获取我的通知类消息
+ *
+ *  @param exclusionIds 要排除的id，用逗号分隔
+ *  @param listType     //0-系统通知 1-消息 7-打赏
+ */
+- (void)getNotificationListWithExclusionIds:(NSString *)exclusionIds
+                                   listType:(NSInteger)listType;
+
+/**
+ *  获取我的邀请类消息
+ *
+ *  @param exclusionIds 要排除的id，用逗号分隔
+ */
+- (void)getInvitationListWithExclusionIds:(NSString *)exclusionIds;
+
+/**
+ *  获取我的追问类消息
+ *
+ *  @param exclusionIds 要排除的id，用逗号分隔
+ */
+- (void)getChaseNotificationListWithExclusionIds:(NSString *)exclusionIds;
+
+/**
+ *  得到消息中心 新消息个数
+ */
+- (void)getMessageCenterNewCount;
+
+#pragma mark ----------------------------------------------------------------------------
+#pragma mark - 去问
+
+/**
+ *  搜索标签
+ *
+ *  @param text 标签文字
+ */
+- (void)searchFieldsWithText:(NSString *)text;
+
+/**
+ *  搜索用户
+ *
+ *  @param text 文字
+ *  @param exclusionIds 要排除的id，用逗号分隔
+ */
+- (void)searchUsersWithText:(NSString *)text
+               exclusionIds:(NSString *)exclusionIds;
+
+/**
+ *  获取问题的推荐标签
+ *
+ *  @param questionTitle 问题内容
+ *  @param description   问题补充说明
+ */
+- (void)getRecommendedFieldsWithQuestionTitle:(NSString *)questionTitle
+                                  description:(NSString *)description;
+
+#pragma mark ----------------------------------------------------------------------------
+#pragma mark - 去答
+
+/**
+ *  获取去答问题列表
+ *
+ *  @param type       0-推荐 1-高分 2-最新
+ *  @param exclusionIds 客户端当前查看的所有id列表，逗号分隔
+ */
+- (void)getGoAnswerListWithType:(NSString *)type
+                   exclusionIds:(NSString *)exclusionIds;
+
+#pragma mark ----------------------------------------------------------------------------
+#pragma mark - 设置
+
+/**
+ *  用户退出登录
+ */
+- (void)userLoginOut;
+
+/**
+ *  得到推送开关设置
+ */
+- (void)getPushOnOff;
+
+/**
+ *  获取第三方账号绑定状态
+ */
+- (void)getOtherAccountInfo;
+
+/**
+ *  绑定第三方账号
+ *
+ *  @param bindFlag     0-取消绑定， 1-去绑定
+ *  @param bindType     0-微信 1-支付宝
+ *  @param weiXinOpenId open id
+ *  @param accessToken  微信或者微博访问授权码
+ *  @param alipayAccount 支付宝账号
+ */
+- (void)bindOtherAccountWithBindFlag:(NSInteger)bindFlag
+                            bindType:(NSInteger)bindType
+                        weiXinOpenId:(NSString *)weiXinOpenId
+                         accessToken:(NSString *)accessToken
+                       alipayAccount:(NSString *)alipayAccount;
+
+/**
+ *  推送设置
+ *
+ *  @param invitationStr 邀请函推送开关
+ *  @param answerStr     回答提醒推送开关
+ *  @param rewardStr     打赏提醒推送开关
+ */
+- (void)setPushOnOffWithInvitationStr:(NSString *)invitationStr
+                            answerStr:(NSString *)answerStr
+                            rewardStr:(NSString *)rewardStr;
+
+/**
+ *  提交反馈
+ *
+ *  @param contentStr 反馈内容
+ *  @param contactStr 联系方式
+ */
+- (void)feedbackWithContentStr:(NSString *)contentStr
+                    contactStr:(NSString *)contactStr;
+
+/**
+ *  检查更新
+ */
+- (void)checkAppUpdate;
+
+/**
+ *  扫一扫
+ *
+ *  @param QRstring 扫描得到的结果
+ */
+- (void)scanQRCodeWithQRString:(NSString *)QRstring;
+
+/**
+ *  分享成功后调用服务端
+ *
+ *  @param questionId 问题Id 可能为空
+ *  @param answerId   回答Id 可能为空
+ *  @param userId     用户Id 可能为空
+ *  @param channelName     分享渠道
+ */
+- (void)notifyShareWithQuestionId:(NSString *)questionId
+                         answerId:(NSString *)answerId
+                           userId:(NSString *)userId
+                      channelName:(NSString *)channelName;
+
+/**
+ *  调试信息上传
+ *
+ *  @param debugsMessage 调试信息
+ */
+- (void)deviceLogWithDebugsMessage:(NSString *)debugsMessage;
+
+#pragma mark ----------------------------------------------------------------------------
+#pragma mark - 语音通话
+
+/**
+ *  获取通话列表
+ *
+ *  @param exclusions 所有id列表，逗号分
+ */
+- (void)getVoiceCallListWithExclusions:(NSString *)exclusions;
+
+/**
+ *  准备通话
+ *
+ *  @param userId 用户id
+ */
+- (void)prepareToCallWithUserId:(NSString *)userId;
+
+/**
+ *  开始通话
+ *
+ *  @param userId 用户id
+ */
+- (void)callingWithUserId:(NSString *)userId;
+
+/**
+ *  获取有问平台的用户列表信息
+ *
+ *  @param userIds 容联云通讯的用户id ,号分割
+ */
+- (void)getYouWenUserDataWithYtxUserIds:(NSString *)ytxUserIds;
+
+/**
+ *  校验进入热点群聊
+ *
+ *  @param hotspotId 热点id
+ */
+- (void)checkHotspotGroupWithHotspotId:(NSString *)hotspotId;
+
+@end

@@ -1,0 +1,635 @@
+//
+//  ScrollViewTopDefaultNavView.m
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/5.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import "ScrollViewTopDefaultNavView.h"
+#import "MMScrollViewObjectProtocol.h"
+#import "ScrollViewVC.h"
+#import "NSString+labelSize.h"
+
+#define HUALABELTAG 100000
+
+@interface ScrollViewTopDefaultNavView ()
+{
+    UIScrollView *navScrollView;
+    UIView *navBgView;
+    
+    //标题长度
+    CGFloat titleWidth;
+    CGFloat sTitleWidth;
+    
+    //滑块
+    UIView *sliderBlockView;
+    
+    //判断左右滑动起始点
+    CGPoint beginPoint;
+    //导航栏起点
+    CGPoint navBeginPoint;
+    
+    //最后一次选中的index
+    CGFloat lastSelectIndex;
+
+    //滑动过程中改变标题颜色
+    UILabel *currentLabel;
+    
+    //滑动过程中改变标题颜色
+    UILabel *nextLabel;
+    
+    //底部分割线
+    UIImageView *bottomLine;
+    
+    BOOL isTapLabelScrolling;
+    
+    NSInteger vcCount;
+    CGFloat allWidth;
+}
+
+@end
+
+@implementation ScrollViewTopDefaultNavView
+@synthesize navArray;
+@synthesize currentIndex;
+@synthesize navScreenHeight = _navScreenHeight;
+@synthesize scrollViewVC;
+@synthesize isTopRightView;
+
+- (void)dealloc
+{
+    self.sliderBlockColor = nil;
+
+    sliderBlockView = nil;
+    navScrollView = nil;
+}
+
+- (instancetype)initWithFrame:(CGRect)frame
+{
+    self = [super initWithFrame:frame];
+    if (self) {
+        navScrollView.tag = 2;
+        //end
+        
+        //导航栏背景
+        navBgView = [[UIView alloc] init];
+        navBgView.frame = CGRectMake(0, 0, [self width], [self height]);
+        [self addSubview:navBgView];
+        
+        //添加导航栏
+        navScrollView = [[UIScrollView alloc] init];
+        navScrollView.showsHorizontalScrollIndicator = NO;
+        navScrollView.frame = CGRectMake(0, 0, [self width], [self height]);
+        navScrollView.backgroundColor = [UIColor whiteColor];
+        [navBgView addSubview:navScrollView];
+        navScrollView.hidden = YES;
+        navScrollView.bounces = NO;
+        navScrollView.tag = 1;
+        //end
+        
+        //底部分割线
+        bottomLine = [[UIImageView alloc] initWithFrame:CGRectMake(0, navBgView.frame.size.height - 0.5, ScreenWidth, 0.5)];
+        bottomLine.backgroundColor = [UIColor redColor];
+        bottomLine.image = [UIImage imageNamed:@"xinhua_bottomLine"];
+        [navBgView addSubview:bottomLine];
+        
+        lastSelectIndex = 0;
+        //end
+
+    }
+    return self;
+}
+
+#pragma mark - ScrollViewTopNavProtocol
+
+- (void) addTopRightView:(id<ScrollViewVCTopChoiceProtocol>)topRightView
+{
+    UIView *view = (UIView *)topRightView;
+    view.frame = CGRectMake(CGRectGetWidth(self.frame) - self.navScreenHeight, 0, self.navScreenHeight, self.navScreenHeight);
+    [navBgView addSubview:view];
+    
+    allWidth = CGRectGetWidth(self.frame) - self.navScreenHeight - 5;
+    CGRect atRect = navScrollView.frame;
+    atRect.size.width = allWidth;
+    atRect.origin.x = 5;
+    navScrollView.frame = atRect;
+}
+
+//添加导航栏
+- (void) addNavViewWithDefaultIndex:(NSInteger)defaultIndex
+{
+    [self dealDefaultValue];
+    
+    vcCount = [self.navArray count];
+    
+
+    if (vcCount > 0)
+    {
+        navScrollView.hidden = NO;
+    }
+    
+    //nav长度计算值
+    CGFloat navWidth = 0;
+    
+    //判断是否居中和均分
+    BOOL isCenter = NO;
+    CGFloat maxValue = 0;
+    if (vcCount < 6)
+    {
+        for (NSInteger i = 0; i < vcCount; i ++)
+        {
+            id<MMScrollViewObjectProtocol> tmpObj = [self.navArray objectAtIndex:i];
+            //计算每个标题大小
+            NSAssert([tmpObj conformsToProtocol:@protocol(MMScrollViewObjectProtocol)], @"ScrollViewVC --- navArray的数组不包含符合 MMScrollViewObjectProtocol协议的object");
+            CGSize wordSize = [NSString generalLabelSizeWithText:tmpObj.s_title
+                                                labelSize:CGSizeMake(ScreenWidth, _navScreenHeight)
+                                                     font:[UIFont fontWithName:MMFontName size:16.5]
+                                                textColor:[UIColor blackColor]];
+            if (wordSize.width > maxValue)
+            {
+                maxValue = wordSize.width;
+            }
+        }
+        
+        maxValue = (maxValue + 30)*vcCount;
+        
+        if (maxValue <= ScreenWidth)
+        {
+            isCenter = YES;
+            
+            allWidth = maxValue;
+            
+            CGRect atRect = navScrollView.frame;
+            atRect.size.width = allWidth;
+            atRect.origin.x = (ScreenWidth - allWidth)/2;
+            navScrollView.frame = atRect;
+        }
+        
+    }
+    //end
+    
+    //动态添加具体类型导航内容
+    for (NSInteger i = 0; i < vcCount; i ++)
+    {
+        id<MMScrollViewObjectProtocol> tmpObj = [self.navArray objectAtIndex:i];
+        NSAssert([tmpObj conformsToProtocol:@protocol(MMScrollViewObjectProtocol)], @"ScrollViewVC --- navArray的数组不包含符合 MMScrollViewObjectProtocol协议的object");
+        //计算每个标题大小
+        CGSize wordSize = [NSString generalLabelSizeWithText:tmpObj.s_title
+                                                   labelSize:CGSizeMake(ScreenWidth, _navScreenHeight)
+                                                        font:[UIFont fontWithName:MMFontName size:16.5]
+                                                   textColor:[UIColor blackColor]];
+        if (isCenter)
+        {
+            tmpObj.s_titleWidth = [NSString stringWithFormat:@"%f",maxValue/vcCount - 30];
+        }
+        else
+        {
+            tmpObj.s_titleWidth = [NSString stringWithFormat:@"%f",wordSize.width];
+        }
+        
+        //end
+        
+        //添加类型标题
+        MMFontLabel *titleLabel = [[MMFontLabel alloc] initWithFrame:CGRectMake(navWidth + 15, 0, [tmpObj.s_titleWidth floatValue], _navScreenHeight)];
+        titleLabel.font = [UIFont fontWithName:MMFontName size:16.5];
+        titleLabel.text = tmpObj.s_title;
+        titleLabel.tag = 20 + i;
+        [navScrollView addSubview:titleLabel];
+        titleLabel.backgroundColor = [UIColor clearColor];
+        titleLabel.textColor = self.defaultTitleColor;
+        titleLabel.textAlignment = NSTextAlignmentCenter;
+        //end
+        
+        //添加透明按钮
+        UIButton *tmpBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        tmpBtn.frame = CGRectMake(navWidth, 0, [tmpObj.s_titleWidth floatValue] + 30, _navScreenHeight);
+        [navScrollView addSubview:tmpBtn];
+        tmpBtn.tag = 200 + i; 
+        [tmpBtn addTarget:self action:@selector(titleTapped:) forControlEvents:UIControlEventTouchUpInside];
+        //end
+        
+        //左右字各控 ---15px title 15px----
+        navWidth += ([tmpObj.s_titleWidth floatValue] + 30);
+        
+        //添加第一个窗体
+        if (i == defaultIndex)
+        {
+            //添加滑块
+            sliderBlockView = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, [tmpObj.s_titleWidth floatValue] + 30, _navScreenHeight)];
+            [navScrollView addSubview:sliderBlockView];
+            if (self.huaHeight == 0)
+            {
+                sliderBlockView.backgroundColor = self.sliderBlockColor;
+            }
+            else
+            {
+                sliderBlockView.backgroundColor = [UIColor clearColor];
+            }
+            
+            [navScrollView sendSubviewToBack:sliderBlockView];
+            
+            //添加所放后的滑块
+            UIImageView *tmpImgView = [[UIImageView alloc] initWithFrame:CGRectMake(5, 3, [tmpObj.s_titleWidth floatValue] + 20, 24)];
+            tmpImgView.backgroundColor = self.subSliderBlockColor;
+            tmpImgView.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleRightMargin;
+            [sliderBlockView addSubview:tmpImgView];
+            tmpImgView.hidden = YES;
+            
+            if (self.isScale == YES)
+            {
+                tmpImgView.hidden = NO;
+            }
+            //end
+            
+            //添加下划线
+            UIImageView *lineImgView = [[UIImageView alloc] initWithFrame:CGRectMake(5, self.navScreenHeight -  self.huaHeight, [tmpObj.s_titleWidth floatValue]+20, self.huaHeight)];
+            lineImgView.backgroundColor = self.sliderBlockColor;
+            lineImgView.tag = HUALABELTAG;
+            [sliderBlockView addSubview:lineImgView];
+            lineImgView.hidden = YES;
+            
+            if (self.huaHeight != 0)
+            {
+                lineImgView.hidden = NO;
+            }
+            //end
+            //默认选中第一个
+            titleLabel.textColor = self.selectedTitleColor;
+            titleLabel.transform = CGAffineTransformMakeScale(self.labelZoomNum, self.labelZoomNum);
+        }
+    }
+    
+    //    if (navWidth <= ScreenWidth)
+    //    {
+    //        navWidth = ScreenWidth;
+    //    }
+    
+    //设置导航栏的contentsize
+    navScrollView.contentSize = CGSizeMake(navWidth, _navScreenHeight);
+    
+    [navBgView bringSubviewToFront:bottomLine];
+
+    if (defaultIndex == 0) {
+        //默认nav移动到0的位置
+        lastSelectIndex = self.currentIndex = 0;
+        [navScrollView setContentOffset:CGPointMake(0, 0) animated:NO];
+    }
+}
+
+/**
+ *  根据新的nav数组更新
+ *
+ *  @param navArrayTmp 新的 nav数组
+ */
+- (void)updateNavViewWithNavArray:(NSMutableArray *)navArrayTmp
+{
+
+}
+
+//移除所有的子view
+- (void)removeAllNavSubViews
+{
+    //移除滑动导航栏的所有栏目
+    [navScrollView.subviews makeObjectsPerformSelector:@selector(removeFromSuperview)];
+}
+
+- (void)selectAtIndex:(NSInteger) index
+{
+    UIButton *sender = (UIButton *)[navScrollView viewWithTag:200 + index];
+    [self titleTapped:sender];
+}
+
+- (void)setNavScreenHeight:(CGFloat)navScreenHeight
+{
+    _navScreenHeight = navScreenHeight;
+    navBgView.frame = CGRectMake(0, 0, allWidth, _navScreenHeight);
+    navScrollView.frame = CGRectMake(0, 0, allWidth, _navScreenHeight);
+    bottomLine.frame = CGRectMake(0, _navScreenHeight - 0.5, ScreenWidth, 0.5);
+    //[self setNeedsDisplay];
+}
+
+- (void)adjustNavScrollViewContentOffset:(NSInteger)currentPage
+{
+    //NSAssert(currentPage >= 0, @"adjustNavScrollViewContentOffset currentPage 不能小于0");
+    NSInteger allPage = [self.navArray count];
+    NSInteger frontPage = MAX(0, currentPage - 1);
+    NSInteger nextPage = MIN(allPage, currentPage + 1);
+    
+    UILabel *frontTitleLabel = (UILabel *)[navScrollView viewWithTag:20 + frontPage];
+    UILabel *currentTitleLabel = (UILabel *)[navScrollView viewWithTag:20 + currentPage];
+    UILabel *nextTitleLabel = (UILabel *)[navScrollView viewWithTag:20 + nextPage];
+    
+    float leftTitleLabel_x = CGRectGetMinX(frontTitleLabel.frame);
+    float rightTitleLabel_x = CGRectGetMaxX(nextTitleLabel.frame);
+    
+    float allDisplayWidth = rightTitleLabel_x - leftTitleLabel_x;
+    float contentOffset_x = leftTitleLabel_x + (allDisplayWidth/2 - CGRectGetWidth(navScrollView.frame)/2);
+    if (frontTitleLabel == currentTitleLabel || frontPage == 0) {
+        contentOffset_x = 0;
+    }
+    else if (nextTitleLabel == currentTitleLabel || nextPage == allPage) {
+        contentOffset_x = navScrollView.contentSize.width - CGRectGetWidth(navScrollView.frame);
+    }
+    else {
+        //当前选择界面不是最两端时，防止滑倒超过最大能滑动距离
+        contentOffset_x = MIN(navScrollView.contentSize.width - CGRectGetWidth(navScrollView.frame), contentOffset_x);
+    }
+    
+    
+    [UIView animateWithDuration:0.3 animations:^{
+        navScrollView.contentOffset = CGPointMake(contentOffset_x, 0);
+    }];
+}
+
+
+#pragma mark - Private Method
+
+//默认值处理
+- (void) dealDefaultValue
+{
+    if (self.huaHeight == 0)
+    {
+        self.huaHeight = _navScreenHeight;
+    }
+    
+    if (self.defaultTitleColor == nil)
+    {
+        self.defaultTitleColor = [UIColor grayColor];
+    }
+    
+    if (self.selectedTitleColor == nil)
+    {
+        self.selectedTitleColor = [UIColor whiteColor];
+    }
+    
+    if (self.sliderBlockColor == nil)
+    {
+        self.sliderBlockColor = [UIColor greenColor];
+    }
+    
+    if (self.subSliderBlockColor == nil)
+    {
+        self.subSliderBlockColor = [UIColor lightGrayColor];
+    }
+    
+    if (self.navbackcolor == nil)
+    {
+        self.navbackcolor = [UIColor whiteColor];
+    }
+    
+    navScrollView.backgroundColor = self.navbackcolor;
+    navBgView.backgroundColor = self.navbackcolor;
+}
+
+- (void) titleTapped:(UIButton *) sender
+{
+    //如果选择的是当前选择的，返回
+    if (sender.tag - 200 == self.currentIndex) {
+        return;
+    }
+    self.currentIndex = sender.tag - 200;
+    __block UILabel *currentTitleLabel = (UILabel *)[navScrollView viewWithTag:20 + self.currentIndex];
+    __block UILabel *lastTitleLabel = (UILabel *)[navScrollView viewWithTag:20 + lastSelectIndex];
+    if (self.changeLabelColorWhenScroll) {
+        [UIView animateWithDuration:0.3 animations:^{
+            lastTitleLabel.textColor = self.defaultTitleColor;
+            lastTitleLabel.transform = CGAffineTransformMakeScale( 1, 1);
+            
+            currentTitleLabel.textColor = self.selectedTitleColor;
+            currentTitleLabel.transform = CGAffineTransformMakeScale(self.labelZoomNum, self.labelZoomNum);
+            
+            
+        } completion:^(BOOL finished) {
+            if (finished) {
+                if (self.huaHeight != 0)
+                {
+                    UIImageView *lineImgView = (UIImageView *)[navScrollView viewWithTag:HUALABELTAG];
+                    CGRect lRect = lineImgView.frame;
+                    lRect.size.width = currentTitleLabel.frame.size.width;
+                    lineImgView.frame = lRect;
+                }
+            }
+        }];
+    }
+    else {
+        //获取titleLabel
+        UILabel *lastTitleLabel = (UILabel *)[navScrollView viewWithTag:20 + lastSelectIndex];
+        lastTitleLabel.textColor = self.defaultTitleColor;
+        UILabel *currentTitleLabel = (UILabel *)[navScrollView viewWithTag:20 + self.currentIndex];
+        currentTitleLabel.textColor = self.selectedTitleColor;
+    }
+    
+    lastSelectIndex = self.currentIndex;
+    
+    isTapLabelScrolling = YES;
+    
+    [self.scrollViewVC selectAtIndex:self.currentIndex];
+    
+    //移动滑块到点击位置
+    CGRect rect = sliderBlockView.frame;
+    sliderBlockView.frame = (CGRect){sender.frame.origin.x, rect.origin.y, sender.frame.size};
+    
+    if (self.changeLabelColorWhenScroll == NO) {
+        if (self.huaHeight != 0)
+        {
+            UIImageView *lineImgView = (UIImageView *)[navScrollView viewWithTag:HUALABELTAG];
+            CGRect lRect = lineImgView.frame;
+            lRect.size.width = currentTitleLabel.frame.size.width;
+            lineImgView.frame = lRect;
+        }
+    }
+    
+    [self adjustNavScrollViewContentOffset:self.currentIndex];
+}
+
+#pragma mark -
+#pragma mark - scroll delegate
+
+- (void) scrollViewDidScroll:(UIScrollView *)scrollView
+{
+    [self.window endEditing:YES];
+    if (self.changeLabelColorWhenScroll && isTapLabelScrolling) {
+        return;
+    }
+    CGPoint secondPoint = scrollView.contentOffset;
+    
+    //当滑动超过一页时候，重新设置相关参数
+    if (fabs((secondPoint.x - beginPoint.x))/ScreenWidth > 1) {
+        [self scrollViewWillBeginDragging:scrollView];
+        return;
+    }
+    
+    //联动导航栏
+    CGRect rect = sliderBlockView.frame;
+    
+    if (secondPoint.x - beginPoint.x > 0 && (self.currentIndex + 1) < vcCount)
+    {
+        if (self.changeLabelColorWhenScroll && isTapLabelScrolling == NO) {
+            nextLabel = (UILabel *)[navScrollView viewWithTag:20 + self.currentIndex + 1];
+        }
+        //向左滑动
+        rect.origin.x = (scrollView.contentOffset.x - self.currentIndex*ScreenWidth)*(titleWidth + 30)/ScreenWidth + navBeginPoint.x;
+        id<MMScrollViewObjectProtocol> sTmpObj = [self.navArray objectAtIndex:self.currentIndex + 1];
+        NSAssert([sTmpObj conformsToProtocol:@protocol(MMScrollViewObjectProtocol)], @"ScrollViewVC --- navArray的数组不包含符合 MMScrollViewObjectProtocol协议的object");
+        //动态变化长度
+        CGFloat secWidth = [sTmpObj.s_titleWidth floatValue];
+        secWidth = secWidth - titleWidth;
+        rect.size.width = (scrollView.contentOffset.x - self.currentIndex*ScreenWidth)*secWidth/ScreenWidth + titleWidth + 30;
+    }
+    
+    if (secondPoint.x - beginPoint.x < 0 && (self.currentIndex - 1) >= 0)
+    {
+        if (self.changeLabelColorWhenScroll && isTapLabelScrolling == NO) {
+            nextLabel = (UILabel *)[navScrollView viewWithTag:20 + self.currentIndex - 1];
+        }
+        
+        id<MMScrollViewObjectProtocol> sTmpObj = [self.navArray objectAtIndex:self.currentIndex - 1];
+        NSAssert([sTmpObj conformsToProtocol:@protocol(MMScrollViewObjectProtocol)], @"ScrollViewVC --- navArray的数组不包含符合 MMScrollViewObjectProtocol协议的object");
+        CGFloat secWidth = [sTmpObj.s_titleWidth floatValue];
+        
+        //向右滑动 动态变化长度
+        rect.origin.x = (scrollView.contentOffset.x - self.currentIndex*ScreenWidth)*(sTitleWidth + 30)/ScreenWidth + navBeginPoint.x;
+        secWidth = secWidth - titleWidth;
+        rect.size.width = (self.currentIndex*ScreenWidth - scrollView.contentOffset.x)*secWidth/ScreenWidth + titleWidth + 30;
+    }
+    
+    sliderBlockView.frame = rect;
+    
+    if (self.huaHeight != 0)
+    {
+        //调整下划线
+        UIImageView *lineImgView = (UIImageView *)[navScrollView viewWithTag:HUALABELTAG];
+        CGRect lRect = lineImgView.frame;
+        lRect.size.width = rect.size.width - 30;
+        lineImgView.frame = lRect;
+    }
+    
+    //调整标题滑动中的颜色值和大小
+    if (self.changeLabelColorWhenScroll && isTapLabelScrolling == NO) {
+        
+        CGFloat bili = fabs((secondPoint.x - beginPoint.x))/ScreenWidth;
+        CGFloat suoxiao = self.labelZoomNum - 1;
+        CGFloat currentSuofang =  self.labelZoomNum - suoxiao *bili;
+        CGFloat nextSuofang =  1 + suoxiao *bili;
+        
+        currentLabel.transform = CGAffineTransformMakeScale(currentSuofang, currentSuofang);
+        nextLabel.transform = CGAffineTransformMakeScale(nextSuofang, nextSuofang);
+        
+        //NSLog(@"=========bili:%f=========curr:%f=========next:%f",bili,currentSuofang,nextSuofang);
+        
+        currentLabel.textColor = [MMColor twoColorShadowWith:self.selectLabelColor twoColor:self.unSelectLabelColor scale:bili];
+        
+        nextLabel.textColor = [MMColor twoColorShadowWith:self.unSelectLabelColor twoColor:self.selectLabelColor scale:bili];
+    }
+}
+
+- (void) scrollViewWillBeginDragging:(UIScrollView *)scrollView
+{
+    beginPoint = scrollView.contentOffset;
+    navBeginPoint = sliderBlockView.frame.origin;
+    
+    //每页宽度
+    CGFloat pageWidth = scrollView.frame.size.width;
+    //根据当前的坐标与页宽计算当前页码
+    self.currentIndex = floor((scrollView.contentOffset.x - pageWidth/2)/pageWidth) + 1;
+    
+    currentLabel = (UILabel *)[navScrollView viewWithTag:20 + self.currentIndex];
+    
+    id<MMScrollViewObjectProtocol> tmpObj = [self.navArray objectAtIndex:self.currentIndex];
+    NSAssert([tmpObj conformsToProtocol:@protocol(MMScrollViewObjectProtocol)], @"ScrollViewVC --- navArray的数组不包含符合 MMScrollViewObjectProtocol协议的object");
+    titleWidth = [tmpObj.s_titleWidth floatValue];
+    
+    if (self.currentIndex > 0)
+    {
+        id<MMScrollViewObjectProtocol> sTmpObj = [self.navArray objectAtIndex:self.currentIndex - 1];
+        NSAssert([tmpObj conformsToProtocol:@protocol(MMScrollViewObjectProtocol)], @"ScrollViewVC --- navArray的数组不包含符合 MMScrollViewObjectProtocol协议的object");
+        sTitleWidth = [sTmpObj.s_titleWidth floatValue];
+    }
+}
+
+- (void)scrollViewDidEndScrollingAnimation:(UIScrollView *)scrollView
+{
+    isTapLabelScrolling = NO;
+}
+
+- (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView
+                         createNewVC:(BOOL)createNewVC
+{
+    //每页宽度
+    CGFloat pageWidth = scrollView.frame.size.width;
+    //根据当前的坐标与页宽计算当前页码
+    NSInteger currentPage = floor((scrollView.contentOffset.x - pageWidth/2)/pageWidth) + 1;
+    self.currentIndex = currentPage;
+    
+    //获取titleLabel
+    UILabel *lastTitleLabel = (UILabel *)[navScrollView viewWithTag:20 + lastSelectIndex];
+    
+    UILabel *currentTitleLabel = (UILabel *)[navScrollView viewWithTag:20 + currentPage];
+    
+    //NSLog(@"=========bili:01=========curr:%f=========next:%f",currentTitleLabel.transform.a,lastTitleLabel.transform.a);
+    
+    [UIView animateWithDuration:0.3 animations:^{
+        lastTitleLabel.textColor = self.defaultTitleColor;
+        lastTitleLabel.transform = CGAffineTransformMakeScale( 1, 1);
+        
+        currentTitleLabel.textColor = self.selectedTitleColor;
+        currentTitleLabel.transform = CGAffineTransformMakeScale(self.labelZoomNum, self.labelZoomNum);
+    } completion:^(BOOL finished) {
+        //NSLog(@"=========bili:02=========curr:%f=========next:%f",currentTitleLabel.transform.a,lastTitleLabel.transform.a);
+    }];
+    
+    lastSelectIndex = currentPage;
+    
+    //移动滑块到点击位置
+    CGRect rect = sliderBlockView.frame;
+    UIButton *tmpBtn = (UIButton *)[navScrollView viewWithTag:200 + currentPage];
+    sliderBlockView.frame = (CGRect){tmpBtn.frame.origin.x, rect.origin.y, tmpBtn.frame.size};
+    
+    if (self.huaHeight != 0)
+    {
+        //调整下划线
+        UIImageView *lineImgView = (UIImageView *)[navScrollView viewWithTag:HUALABELTAG];
+        CGRect lRect = lineImgView.frame;
+        lRect.size.width = rect.size.width - 30;
+        lineImgView.frame = lRect;
+    }
+    
+    [self adjustNavScrollViewContentOffset:self.currentIndex];
+}
+
+@end
+
+@interface MMColor ()
+
+@property (nonatomic) CGFloat red;
+@property (nonatomic) CGFloat green;
+@property (nonatomic) CGFloat blue;
+
+@end
+
+@implementation MMColor
+
++ (MMColor *)colorWithRed:(CGFloat)red green:(CGFloat)green blue:(CGFloat)blue
+{
+    MMColor *color = [MMColor new];
+    color.red = red;
+    color.green = green;
+    color.blue = blue;
+    
+    return color;
+}
+
++ (UIColor *)twoColorShadowWith:(MMColor *)oneColor twoColor:(MMColor *)twoColor scale:(float)scale
+{
+    if (scale < 0) {
+        scale = 0;
+    }
+    else if (scale > 1) {
+        scale = 1;
+    }
+    
+    return [UIColor colorWithRed:fabs(oneColor.red + (twoColor.red-oneColor.red)*scale)/255.0 green:fabs(oneColor.green + (twoColor.green-oneColor.green)*scale)/255.0 blue:fabs(oneColor.blue + (twoColor.blue-oneColor.blue)*scale)/255.0 alpha:1];
+}
+
+@end

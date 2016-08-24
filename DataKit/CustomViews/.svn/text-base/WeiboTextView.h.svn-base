@@ -1,0 +1,34 @@
+//
+//  WeiboTextView.h
+//  HyYuLe
+//
+//  Created by Wang Yang on 13-7-3.
+//  Copyright (c) 2013年 Hang Zhou Zhang Niu. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+#import "FYCoreTextProtocol.h"
+
+@interface WeiboTextView : UIView <FYCoreTextProtocol>
+
+@property (nonatomic, retain) NSDictionary *weiboFaceDic;
+@property (nonatomic, retain) NSMutableArray *weiboFaceResultDic;//需要显示的图片的位置
+@property (nonatomic, retain) NSMutableArray *linkArray;//链接的位置
+@property (nonatomic, retain) NSMutableArray *linkButtonArray;//链接按钮的指针数组
+
+@property(nonatomic, retain) UIColor* linkColor;
+
+@property (nonatomic, retain) NSMutableAttributedString *ctAttributedString;
+
+- (void)drawImageAndLink:(CTFrameRef)frameRef content:(CGContextRef)content;
+
+- (void)linkButtonDownPressed:(UIButton *)button;
+- (void)linkButtonUpInsidePressed:(UIButton *)button;
+- (void)linkButtonOutInsidePressed:(UIButton *)button;
+
++ (NSString *)getWeiboText:(NSDictionary *)rowDic;
++ (NSString *)getWeiboImagePath:(NSDictionary *)rowDic;
+
++ (CGFloat)getHeightWithText:(NSString *)text width:(CGFloat)width;
+
+@end

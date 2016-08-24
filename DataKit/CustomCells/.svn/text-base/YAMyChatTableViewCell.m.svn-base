@@ -1,0 +1,135 @@
+//
+//  YAMyChatTableViewCell.m
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/10.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import "YAMyChatTableViewCell.h"
+#import "YAHeadImageView.h"
+#import "NSString+extras.h"
+#import "YABadgeNumberView.h"
+#import "IMMsgDBAccess.h"
+#import "YAChatPersonObject.h"
+
+@interface YAMyChatTableViewCell ()
+{
+    YABadgeNumberView *badgeNumberView;
+}
+
+@property (weak, nonatomic) IBOutlet YAHeadImageView *ui_headImageView;
+
+@property (weak, nonatomic) IBOutlet UILabel *ui_nameLabel;
+
+@property (weak, nonatomic) IBOutlet UILabel *ui_timeLabel;
+
+@property (weak, nonatomic) IBOutlet UILabel *ui_contentLabel;
+@property (weak, nonatomic) IBOutlet NSLayoutConstraint *ui_contentLabelTrailingConstraint;
+
+@property (weak, nonatomic) IBOutlet UIImageView *ui_groupNotpushImage;
+
+@end
+
+@implementation YAMyChatTableViewCell
+
+- (id)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
+{
+    self = [[[NSBundle mainBundle] loadNibNamed:@"YAMyChatTableViewCell" owner:nil options:nil] lastObject];
+    
+    //未读提醒
+    self->badgeNumberView = [[YABadgeNumberView alloc] initWithFrame:CGRectZero];
+    badgeNumberView.badgeImages = @[@"img_bubble_1",@"img_bubble_2",@"img_bubble_3"];
+    badgeNumberView.badgeSizes = @[[NSValue valueWithCGSize:CGSizeMake(17, 17)],
+                                   [NSValue valueWithCGSize:CGSizeMake(22, 17)],
+                                   [NSValue valueWithCGSize:CGSizeMake(27, 17)]];
+    badgeNumberView.numberFont = [UIFont systemFontOfSize:11];
+    badgeNumberView.numberLabelTopConstant = -7;
+    [self.contentView addSubview:badgeNumberView];
+    [badgeNumberView autoPinEdgeToSuperviewEdge:ALEdgeTop withInset:8];
+    [badgeNumberView autoPinEdgeToSuperviewEdge:ALEdgeLeading withInset:35];
+    //end
+    
+    return self;
+}
+
+- (void)awakeFromNib {
+    // Initialization code
+    self.contentView.backgroundColor = [UIColor whiteColor];
+    
+    self.ui_headImageView.shadeImageName = @"img_head_homeBig";
+    self.ui_headImageView.shadeHighlightedImageName = @"img_head_homeBig_press";
+    self.ui_headImageView.verifiedTypeImage = @"img_userVip";
+}
+
+- (void)setSelected:(BOOL)selected animated:(BOOL)animated {
+    [super setSelected:selected animated:animated];
+
+    // Configure the view for the selected state
+}
+
+#pragma mark - MMCellProtocol
+
+- (void)setContentWithObject:(id)object AtIndexPath:(NSIndexPath *)indexPath
+{
+    ECSession *session = [object objectAtIndex:indexPath.row];
+    
+
+    //判断是不是系统消息
+    if (session.type == 100) {
+        self.ui_nameLabel.text = @"系统通知";
+        
+        self.ui_headImageView.hideVerifiedView = YES;
+        self.ui_headImageView.userId = @(0);
+        [self.ui_headImageView updateWithImage:[UIImage imageNamed:@"chat_pushMessage"]];
+    }
+    //end
+    else {
+        //判断是否是群组
+        if ([session.sessionId hasPrefix:@"g"]) {
+            self.ui_nameLabel.text = [[IMMsgDBAccess sharedInstance] getGroupNameOfId:session.sessionId];
+            
+            self.ui_headImageView.hideVerifiedView = YES;
+            self.ui_headImageView.userId = @(0);
+            [self.ui_headImageView updateWithImage:[UIImage imageNamed:@"group_head"]];
+        }
+        else {
+            self.ui_nameLabel.text = [[IMMsgDBAccess sharedInstance] getUserName:session.sessionId];
+            
+            YAChatPersonObject *chatObj = [[IMMsgDBAccess sharedInstance] getChatPersonObjectWithYtxUserId:session.sessionId];
+            self.ui_headImageView.hideVerifiedView = NO;
+            [self.ui_headImageView updateWithImagePath:chatObj.head_photo
+                                                userId:@([chatObj.ywUserId integerValue])
+                                          verifiedType:chatObj.verified_type];
+        }
+        //end
+    }
+    
+    //内容
+    NSCharacterSet *ws = [NSCharacterSet whitespaceAndNewlineCharacterSet];
+    NSString *trimmed = [session.text stringByTrimmingCharactersInSet:ws];
+    self.ui_contentLabel.text = trimmed;
+    //end
+    
+    self.ui_timeLabel.text = [NSString getDateDisplayString:session.dateTime];
+    
+    BOOL isNotice = YES;
+    if ([session.sessionId hasPrefix:@"g"]) {
+        isNotice = [[IMMsgDBAccess sharedInstance] isNoticeOfGroupId:session.sessionId];
+    }
+    
+    //是否是免打扰状态
+    if (isNotice) {
+        self.ui_groupNotpushImage.hidden = YES;
+        self.ui_contentLabelTrailingConstraint.constant = 10.0f;
+        [badgeNumberView updateBadgeWithNumber:(int)session.unreadCount];
+    }
+    else {
+        self.ui_groupNotpushImage.hidden = NO;
+        self.ui_contentLabelTrailingConstraint.constant = 27.0f;
+        [badgeNumberView updateBadgeWithNumber:0];
+    }
+    //end
+}
+
+@end

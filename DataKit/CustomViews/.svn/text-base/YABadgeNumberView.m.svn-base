@@ -1,0 +1,114 @@
+//
+//  YABadgeNumberView.m
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/3.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import "YABadgeNumberView.h"
+
+@interface YABadgeNumberView ()
+{
+    UIImageView *badgeBlView;
+    
+    UILabel *numberLabel;
+    NSLayoutConstraint *numberLabelTopConstraint;
+    
+    NSLayoutConstraint *selfWidthConstraint;
+    NSLayoutConstraint *selfHeightConstraint;
+}
+
+@property (nonatomic, assign) YABadgeNumberState numberState;
+
+@end
+
+@implementation YABadgeNumberView
+
+- (instancetype)initWithFrame:(CGRect)frame
+{
+    self = [super initWithFrame:frame];
+    if (self) {
+        self.hidden = YES;
+        
+        badgeBlView = [[UIImageView alloc] initWithFrame:CGRectZero];
+        [self addSubview:badgeBlView];
+        [badgeBlView autoPinEdgesToSuperviewEdgesWithInsets:UIEdgeInsetsZero];
+        
+        numberLabel = [[UILabel alloc] initWithFrame:CGRectZero];
+        numberLabel.textAlignment = NSTextAlignmentCenter;
+        numberLabel.textColor = [UIColor whiteColor];
+        numberLabel.font = [UIFont systemFontOfSize:11];
+        [self addSubview:numberLabel];
+        numberLabel.contentMode = UIViewContentModeCenter;
+        numberLabelTopConstraint = [numberLabel autoPinEdgeToSuperviewEdge:ALEdgeTop withInset:0];
+        [numberLabel autoPinEdgeToSuperviewEdge:ALEdgeLeading withInset:0];
+        [numberLabel autoPinEdgeToSuperviewEdge:ALEdgeBottom withInset:0];
+        [numberLabel autoPinEdgeToSuperviewEdge:ALEdgeTrailing withInset:0];
+    }
+    return self;
+}
+
+- (void)updateBadgeWithNumber:(NSInteger)number
+{
+    if (number <= 0) {
+        self.hidden = YES;
+        return;
+    }
+    self.hidden = NO;
+    if (number < 10 && _numberState != YABadgeNumberStateOne) {
+        badgeBlView.image = [UIImage imageNamed:_badgeImages[0]];
+        _numberState = YABadgeNumberStateOne;
+        CGSize selfSize = [_badgeSizes[0] CGSizeValue];
+        [self updateBadgeConstraint:selfSize.width height:selfSize.height];
+    }
+    else if (number >= 10 && number < 100 && _numberState != YABadgeNumberStateTwo) {
+        badgeBlView.image = [UIImage imageNamed:_badgeImages[1]];
+        _numberState = YABadgeNumberStateTwo;
+        CGSize selfSize = [_badgeSizes[1] CGSizeValue];
+        [self updateBadgeConstraint:selfSize.width height:selfSize.height];
+    }
+    else if (number >= 100 && number < 1000 && _numberState != YABadgeNumberStateThree) {
+        badgeBlView.image = [UIImage imageNamed:_badgeImages[2]];
+        _numberState = YABadgeNumberStateThree;
+        CGSize selfSize = [_badgeSizes[2] CGSizeValue];
+        [self updateBadgeConstraint:selfSize.width height:selfSize.height];
+    }
+    else if (number >= 1000 && _numberState != YABadgeNumberStateThree) {
+        badgeBlView.image = [UIImage imageNamed:_badgeImages[1]];
+        _numberState = YABadgeNumberStateThree;
+        CGSize selfSize = [_badgeSizes[1] CGSizeValue];
+        [self updateBadgeConstraint:selfSize.width height:selfSize.height];
+    }
+    if (number >= 1000) {
+        numberLabelTopConstraint.constant = self.numberLabelTopConstant;
+        numberLabel.text = @"999+";
+    }
+    else {
+        numberLabelTopConstraint.constant = 0;
+        numberLabel.text = [@(number) stringValue];
+    }
+}
+
+- (void)updateBadgeConstraint:(CGFloat)width height:(CGFloat)height
+{
+    if (selfWidthConstraint == nil) {
+        selfHeightConstraint = [self autoSetDimension:ALDimensionHeight toSize:height];
+        selfWidthConstraint = [self autoSetDimension:ALDimensionWidth toSize:width];
+    }
+    selfHeightConstraint.constant = height;
+    selfWidthConstraint.constant = width;
+}
+
+#pragma mark - getters and setters
+
+- (void)setNumberFont:(UIFont *)numberFont
+{
+    if (_numberFont) {
+        _numberFont = nil;
+    }
+    _numberFont = numberFont;
+    numberLabel.font = numberFont;
+}
+
+@end

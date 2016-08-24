@@ -1,0 +1,258 @@
+//
+//  MMAppDelegateHelper.m
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/23.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import "MMAppDelegateHelper.h"
+#import "NSString+MD5Addition.h"
+#import "JSONKit.h"
+#import "DeviceDelegateHelper.h"
+
+@interface MMAppDelegateHelper ()
+
+@property (nonatomic,strong,readwrite) YAUser *user;
+@property (nonatomic, copy) NSString *userFilePath;
+@property (nonatomic,strong) dispatch_queue_t ioQueue;
+
+/**
+ *  判断是不是在每次启动客户端的时候，已经显示过提示语
+ */
+@property (nonatomic, assign) BOOL isShowedPromteEveryRuning;
+
+@end
+
+@implementation MMAppDelegateHelper
+
++ (MMAppDelegateHelper *)shareHelper
+{
+    static MMAppDelegateHelper *helper;
+    static dispatch_once_t onece_t_p;
+    dispatch_once(&onece_t_p, ^{
+        helper = [[MMAppDelegateHelper alloc] init];
+        helper.ioQueue = dispatch_queue_create("youwen.MMAppDelegateHelper.queue", DISPATCH_QUEUE_SERIAL);
+    });
+    return helper;
+}
+
+- (YAUser *)currentUser
+{
+    if ([MMAppDelegateHelper shareHelper].user == nil) {
+        if ([[NSFileManager defaultManager] fileExistsAtPath:self.userFilePath] == NO) {
+            return nil;
+        }
+        [MMAppDelegateHelper shareHelper].user = [NSKeyedUnarchiver unarchiveObjectWithFile:self.userFilePath];
+    }
+    
+    return [MMAppDelegateHelper shareHelper].user;
+}
+
+- (NSString *)currentUserId
+{
+    if ([MMAppDelegateHelper shareHelper].user == nil) {
+        return @"0";
+    }
+    
+    return [[MMAppDelegateHelper shareHelper].user.userId stringValue];
+}
+
+- (void)updateWithUser:(YAUser *)user
+{
+    if (user) {
+        dispatch_async([MMAppDelegateHelper shareHelper].ioQueue, ^()
+                       {
+                           [NSKeyedArchiver archiveRootObject:user toFile:self.userFilePath];
+                           [MMAppDelegateHelper shareHelper].user = user;
+                       });
+    }else {
+        [MMAppDelegateHelper shareHelper].user = nil;
+        [[NSFileManager defaultManager]removeItemAtPath:self.userFilePath error:nil];
+    }
+}
+
+- (void)userLoginOut:(BOOL)clearViewControllers
+{
+    [self updateWithUser:nil];
+
+    [self updateLoginUserNameAndPsWithName:nil password:nil];
+    [[DeviceDelegateHelper sharedInstance] logout];
+    
+    //移除除了设置和首页外的所有界面
+    if (clearViewControllers) {
+        @try {
+            [self clearViewControllersToHomeAnimated:NO];
+        }
+        @catch (NSException *exception) {
+            NSLog(@"error---移除除了设置和首页外的所有界面---异常---%@",[MMAppDelegate.nav viewControllers]);
+        }
+        @finally {
+            
+        }
+    }
+//    NSMutableArray *array = [[MMAppDelegate.nav viewControllers] mutableCopy];
+//    //两个Nav不是同一个，说明有mode层
+//    [array removeObjectsInRange:NSMakeRange(nav != MMAppDelegate.nav ? 0 : 1, array.count - (nav != MMAppDelegate.nav ? 1 : 2))];
+//    [MMAppDelegate.nav setViewControllers:array];
+    //end
+    
+    [[NSNotificationCenter defaultCenter] postNotificationName:kUserLoginStateChangeNotification object:nil];
+}
+
+/**
+ *  清楚试图控制器堆栈，并返回到首页
+ */
+- (void)clearViewControllersToHomeAnimated:(BOOL)animated
+{
+    //清空层级
+    MLNavigationController *nav = MMAppDelegate.rootNav;
+    if (nav != MMAppDelegate.nav) {
+        [MMAppDelegate.nav dismissViewControllerAnimated:NO completion:NULL];
+    }
+    [nav popToRootViewControllerAnimated:animated];
+}
+
+- (NSString *)userFilePath
+{
+    if (_userFilePath == nil) {
+        NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory,NSUserDomainMask, YES);
+        _userFilePath = [[paths objectAtIndex:0] stringByAppendingPathComponent:[@"userFile" stringFromMD5]];
+    }
+    return _userFilePath;
+}
+
+/**
+ *  得到登录用的用户名和密码
+ */
+- (NSArray *)getLoginUserNameAndPs
+{
+    NSString *nameAndPsRSA = [[NSUserDefaults standardUserDefaults] objectForKey:@"YAUserNameAndPs"];
+    if (nameAndPsRSA == nil || nameAndPsRSA.length <= 0) {
+        return nil;
+    }
+    return [nameAndPsRSA componentsSeparatedByString:@"###"];
+}
+
+/**
+ *  更新用于登录的用户名和密码
+ */
+- (void)updateLoginUserNameAndPsWithName:(NSString *)name
+                                password:(NSString *)password
+{
+    if (name == nil && password == nil) {
+        [[NSUserDefaults standardUserDefaults] setObject:nil forKey:@"YAUserNameAndPs"];
+        [[NSUserDefaults standardUserDefaults] synchronize];
+        return;
+    }
+    CFAbsoluteTime StartTime = CFAbsoluteTimeGetCurrent();
+
+    NSString *nameAndPs = [name stringByAppendingFormat:@"###%@",password];
+//    NSData *nameAData = [nameAndPs dataUsingEncoding:NSUTF8StringEncoding];
+//    
+//    NSData *nameAndPsRSAData = [nameAData encryptDESWithKey:@"abceiji3432"];
+//    
+//    NSData *nameAndPsTData = [nameAndPsRSAData decryptDESWithKey:@"abceiji3432"];
+//    
+//    NSString *nameAndPsS = [[NSString alloc] initWithData:nameAndPsRSAData encoding:NSUnicodeStringEncoding];
+//    
+    NSLog(@"执行时间 %f sec", CFAbsoluteTimeGetCurrent() - StartTime);
+    
+    [[NSUserDefaults standardUserDefaults] setObject:nameAndPs forKey:@"YAUserNameAndPs"];
+    [[NSUserDefaults standardUserDefaults] synchronize];
+}
+
+/**
+ *  保存用户头像
+ *
+ *  @param imageData 用户头像数据
+ *  @param imagePath 用户头像本地地址
+ */
+- (void)saveUserHeadPhotoWithImageData:(NSData *)imageData
+                             imagePath:(NSString **)imagePath
+{
+    dispatch_async([MMAppDelegateHelper shareHelper].ioQueue, ^()
+                   {
+                       NSString *imagePathTmp = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents/UserHeadImagePath.png"];
+                       [imageData writeToFile:imagePathTmp atomically:NO];
+                       *imagePath = [imagePathTmp copy];
+                   });
+}
+
+#pragma mark - 启动接口相关
+
+- (NSString *)launchAccessDataPath
+{
+    return [NSHomeDirectory() stringByAppendingPathComponent:@"Documents/LaunchAccess"];;
+}
+
+/**
+ *  是否保存的有登录接口数据
+ *
+ *  @return 结果
+ */
+- (BOOL)isHaveLaunchAccessData
+{
+    return [[NSFileManager defaultManager] fileExistsAtPath:[self launchAccessDataPath]];
+}
+
+/**
+ *  保存登录接口数据
+ *
+ *  @param dic 登录接口数据
+ */
+- (void)saveLaunchAccessDataWithDic:(NSDictionary *)dic
+{
+    if (dic == nil) {
+        return;
+    }
+    NSString *dicStr = [dic JSONStringWithOptions:JKSerializeOptionValidFlags error:nil];
+    dispatch_async([MMAppDelegateHelper shareHelper].ioQueue, ^()
+                   {
+                       [dicStr writeToFile:[self launchAccessDataPath] atomically:NO encoding:NSUTF8StringEncoding error:nil];
+                   });
+}
+
+/**
+ *  读取登录接口数据
+ *
+ *  @return 登录接口数据
+ */
+- (NSDictionary *)readLaunchAccessData
+{
+    __block NSDictionary *dic = nil;
+    dispatch_sync([MMAppDelegateHelper shareHelper].ioQueue, ^{
+        NSString *dicStr = [NSString stringWithContentsOfFile:[self launchAccessDataPath] encoding:NSUTF8StringEncoding error:nil];
+        dic = [dicStr objectFromJSONString];
+    });
+    return dic;
+}
+
+/**
+ *  判断是否需要显示前往pc输入的提示语，回答的时候
+ *
+ *  @return 结果
+ */
+- (BOOL)showPromtWhenAnswer
+{
+    NSNumber *showNumber = [[NSUserDefaults standardUserDefaults] objectForKey:@"YAShowPromtWhenAnswerNumber"];
+    if (showNumber == nil) {
+        self.isShowedPromteEveryRuning = YES;
+        [[NSUserDefaults standardUserDefaults] setValue:@(1) forKey:@"YAShowPromtWhenAnswerNumber"];
+        return YES;
+    }
+    if ([showNumber integerValue] >= 3) {
+        return NO;
+    }
+    //每次启动客户端，只要启动过就等到下次启动再显示
+    if (self.isShowedPromteEveryRuning) {
+        return NO;
+    }
+    self.isShowedPromteEveryRuning = YES;
+    //end
+    NSInteger newNumber = [showNumber integerValue] + 1;
+    [[NSUserDefaults standardUserDefaults] setValue:@(newNumber) forKey:@"YAShowPromtWhenAnswerNumber"];
+    return YES;
+}
+
+@end

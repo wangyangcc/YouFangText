@@ -1,0 +1,13 @@
+//
+//  MMFontTextView.h
+//  XinHuaPublish
+//
+//  Created by LDhai on 15/4/14.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+
+@interface MMFontTextView : UITextView
+
+@end

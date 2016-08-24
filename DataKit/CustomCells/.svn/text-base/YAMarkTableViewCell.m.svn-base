@@ -1,0 +1,202 @@
+//
+//  YAMarkTableViewCell.m
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/11.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import "YAMarkTableViewCell.h"
+#import "YAHeadImageView.h"
+#import "YAQuestionObject.h"
+#import "NSString+labelSize.h"
+
+@interface YAMarkTableViewCell ()
+
+/**
+ *  最上面的标示文字
+ */
+@property (weak, nonatomic) IBOutlet UIView *ui_markViewsBL;
+@property (weak, nonatomic) IBOutlet UIView *ui_allViewsBL;
+@property (weak, nonatomic) IBOutlet NSLayoutConstraint *ui_markViewsBLTopConstraints;
+
+@property (weak, nonatomic) IBOutlet YAHeadImageView *ui_askHeadImage;
+@property (weak, nonatomic) IBOutlet UILabel *ui_askNameLabel;
+@property (weak, nonatomic) IBOutlet UILabel *ui_askTimeLabel;
+
+@property (weak, nonatomic) IBOutlet UILabel *ui_askContentLabel;
+@property (weak, nonatomic) IBOutlet NSLayoutConstraint *ui_askContentHeightConstraints;
+/**
+ *  积分label
+ */
+@property (weak, nonatomic) IBOutlet UILabel *ui_askIntegralLabel;
+@property (weak, nonatomic) IBOutlet NSLayoutConstraint *ui_askIntegralWidthConstraints;
+
+/**
+ *  标签views
+ */
+@property (weak, nonatomic) IBOutlet UILabel *ui_askTagsLabel;
+@property (weak, nonatomic) IBOutlet NSLayoutConstraint *ui_askTagsHeightConstraints;
+
+
+@property (weak, nonatomic) IBOutlet YAHeadImageView *ui_answerHeadImage;
+@property (weak, nonatomic) IBOutlet UILabel *ui_answerNameLabel;
+
+@property (weak, nonatomic) IBOutlet UILabel *ui_answerContentLabel;
+@property (weak, nonatomic) IBOutlet NSLayoutConstraint *ui_answerContentHeightConstraints;
+
+/**
+ *  问题和回答之间的分割线
+ */
+@property (weak, nonatomic) IBOutlet UIImageView *ui_askAnswerLine;
+
+@property (nonatomic, strong) NSIndexPath *currentIndexPath;
+
+@end
+
+@implementation YAMarkTableViewCell
+
+- (id)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
+{
+    self = [[[NSBundle mainBundle] loadNibNamed:@"YAMarkTableViewCell" owner:nil options:nil] lastObject];
+    return self;
+}
+
+- (void)awakeFromNib {
+    // Initialization code
+    self.backgroundColor = MMRGBColor(244, 244, 246);
+
+    self.ui_markViewsBL.backgroundColor = [UIColor whiteColor];
+    self.ui_allViewsBL.backgroundColor = [UIColor whiteColor];
+    self.ui_askTagsLabel.backgroundColor = [UIColor whiteColor];
+    
+    self.ui_askHeadImage.shadeImageName = @"img_head_homeBig";
+    self.ui_askHeadImage.verifiedTypeImage = @"img_userVip";
+    
+    self.ui_answerHeadImage.verifiedTypeImage = @"img_userVip";
+}
+
+- (void)setSelected:(BOOL)selected animated:(BOOL)animated {
+    [super setSelected:selected animated:animated];
+
+    // Configure the view for the selected state
+}
+
+
+#pragma mark - MMCellProtocol
+
+- (void)setContentWithObject:(id)object AtIndexPath:(NSIndexPath *)indexPath
+{
+    self.currentIndexPath = indexPath;
+    self.selectionStyle = UITableViewCellSelectionStyleNone;
+    
+    self.ui_markViewsBLTopConstraints.constant = (indexPath.row == 0 ? 30 : 0 );
+    self.ui_markViewsBL.hidden = (indexPath.row == 0 ? NO : YES );
+    YAQuestionObject *questionObj = object[indexPath.row];
+    
+    //两个头像
+    [self.ui_askHeadImage updateWithImagePath:questionObj.q_head_photo
+                                       userId:questionObj.q_create_user
+                                 verifiedType:questionObj.q_verified_type];
+
+    //end
+
+    self.ui_askNameLabel.attributedText = [self nameLabelContentWithNameStr:questionObj.q_user_name actionName:@"问"];
+
+    self.ui_askContentLabel.text = questionObj.q_content;
+    self.ui_askContentHeightConstraints.constant = questionObj.questionTextHeight;
+    self.ui_askTagsLabel.attributedText = [YAMarkTableViewCell tagsLabelWithFieldsString:[questionObj.q_fields componentsJoinedByString:@" "]];
+    self.ui_askTagsHeightConstraints.constant = questionObj.fieldsHeight;
+
+    self.ui_askTimeLabel.text = questionObj.q_create_time;
+    self.ui_askIntegralLabel.text = [NSString stringWithFormat:@"积分:%@",[questionObj.q_reward_score stringValue]];
+    self.ui_askIntegralWidthConstraints.constant = [NSString generalLabelSizeWithText:self.ui_askIntegralLabel.text labelSize:CGSizeMake(MAXFLOAT, 16) font:self.ui_askIntegralLabel.font textColor:self.ui_askIntegralLabel.textColor].width + 10;
+    
+    //判断是否有回答
+    if (questionObj.q_answerObject) {
+        self.ui_answerNameLabel.attributedText = [self nameLabelContentWithNameStr:questionObj.q_answerObject.a_user_name actionName:@"回答"];
+        self.ui_answerNameLabel.alpha = 1;
+        self.ui_answerContentLabel.text = questionObj.q_answerObject.a_content;
+        self.ui_answerContentHeightConstraints.constant = questionObj.answerTextHeight;
+        [self.ui_answerHeadImage updateWithImagePath:questionObj.q_answerObject.a_head_photo
+                                              userId:questionObj.q_answerObject.a_create_user
+                                        verifiedType:questionObj.q_answerObject.a_verified_type];
+        self.ui_answerHeadImage.alpha = 1;
+        self.ui_answerHeadImage.shadeImageName = @"img_head_homeBig";
+        self.ui_answerHeadImage.isAnonymous = [questionObj.q_answerObject.a_anonymous boolValue];
+        self.ui_askAnswerLine.image = [UIImage imageNamed:@"img_home_line"];
+    }
+    else {
+        self.ui_answerNameLabel.attributedText = nil;
+        self.ui_answerNameLabel.alpha = 0;
+        self.ui_answerContentLabel.text = @"";
+        self.ui_answerContentHeightConstraints.constant = 0;
+        
+        self.ui_answerHeadImage.alpha = 0;
+        [self.ui_answerHeadImage updateWithImagePath:nil userId:nil verifiedType:nil];
+        self.ui_answerHeadImage.shadeImageName = nil;
+        self.ui_answerHeadImage.isAnonymous = NO;
+        self.ui_askAnswerLine.image = nil;
+    }
+}
+
+//- (void)setCellDelegate:(id) object
+//{
+//    self.c_delegate = object;
+//}
+
+#pragma mark - Private Method
+
+- (NSMutableAttributedString *)nameLabelContentWithNameStr:(NSString *)nameStr
+                                                actionName:(NSString *)actionName
+{
+    if (nameStr == nil) {
+        nameStr = @"";
+    }
+    NSString *firstString = nameStr;
+    NSString *secondString = [NSString stringWithFormat:@"  %@",actionName];
+    NSString *allString = [NSString stringWithFormat:@"%@%@",firstString,secondString];
+    
+    NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:allString];
+    [attributedString addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:14] range:NSMakeRange(0, allString.length)];
+    [attributedString addAttribute:NSForegroundColorAttributeName value:[UIColor colorWithHexString:@"#2AA3EC"] range:NSMakeRange(0, firstString.length)];
+    [attributedString addAttribute:NSForegroundColorAttributeName value:MMRGBColor(49, 49, 49) range:NSMakeRange(firstString.length, secondString.length)];
+    return attributedString;
+}
+
++ (nonnull NSMutableAttributedString *)tagsLabelWithFieldsString:(nullable NSString *)fieldsString
+{
+
+    NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] init];
+    //图标
+    UIImage *image = [UIImage imageNamed:@"img_marktTag"];
+    NSTextAttachment *attachment = [[NSTextAttachment alloc] init];
+    attachment.image = image;
+    attachment.bounds = CGRectMake(0, 0, image.size.width, image.size.height);
+    [attributedString appendAttributedString:[NSAttributedString attributedStringWithAttachment:attachment]];
+    //end
+    
+    //内容
+    NSString *firstString = [NSString stringWithFormat:@"  %@",fieldsString];
+    NSMutableAttributedString *firstAttributedString = [[NSMutableAttributedString alloc] initWithString:firstString];
+    [firstAttributedString addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:14] range:NSMakeRange(0, firstString.length)];
+    [firstAttributedString addAttribute:NSForegroundColorAttributeName value:MMRGBColor(121, 126, 137) range:NSMakeRange(0, firstString.length)];
+    [attributedString appendAttributedString:firstAttributedString];
+    //end
+    
+    NSMutableParagraphStyle *parStyle = [[NSParagraphStyle defaultParagraphStyle] mutableCopy];
+    parStyle.headIndent = 19;
+    [attributedString addAttribute:NSParagraphStyleAttributeName value:parStyle range:NSMakeRange(0, attributedString.length)];
+    return attributedString;
+}
+
+
+#pragma mark - enent response
+
+//iOS8 设置cell分隔条
+- (UIEdgeInsets)layoutMargins
+{
+    return UIEdgeInsetsZero;
+}
+
+@end

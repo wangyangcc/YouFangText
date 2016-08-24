@@ -1,0 +1,74 @@
+//
+//  YAInviteWayTableViewCell.m
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/4.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import "YAInviteWayTableViewCell.h"
+#import "YAInviteWayObject.h"
+
+@implementation YAInviteWayTableViewCell
+{
+    UIImageView *cionImageView;
+    UILabel *nameLabel;
+}
+
+- (id)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
+{
+    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
+    if (self) {
+        cionImageView = [[UIImageView alloc] init];
+        [self.contentView addSubview:cionImageView];
+        [cionImageView autoSetDimensionsToSize:CGSizeMake(30, 30)];
+        [cionImageView autoPinEdgeToSuperviewEdge:ALEdgeLeading withInset:12];
+        [cionImageView autoAlignAxisToSuperviewAxis:ALAxisHorizontal];
+        
+        nameLabel = [[UILabel alloc] init];
+        nameLabel.textColor = [UIColor colorWithHexString:@"#323232"];
+        nameLabel.font = [UIFont systemFontOfSize:16];
+        [self.contentView addSubview:nameLabel];
+        [nameLabel autoSetDimension:ALDimensionHeight toSize:21];
+        [nameLabel autoAlignAxisToSuperviewAxis:ALAxisHorizontal];
+        [nameLabel autoPinEdge:ALEdgeLeading toEdge:ALEdgeTrailing ofView:cionImageView withOffset:17];
+        
+        UIImageView *invitateTitleLine = [[UIImageView alloc] init];
+        invitateTitleLine.image = [UIImage imageNamed:@"img_home_line"];
+        [self addSubview:invitateTitleLine];
+        [invitateTitleLine autoSetDimension:ALDimensionHeight toSize:0.5];
+        [invitateTitleLine autoPinEdgeToSuperviewEdge:ALEdgeBottom withInset:0];
+        [invitateTitleLine autoPinEdgeToSuperviewEdge:ALEdgeLeading withInset:12];
+        [invitateTitleLine autoPinEdgeToSuperviewEdge:ALEdgeTrailing withInset:0];
+        
+        UIImageView *arrowImageView = [[UIImageView alloc] init];
+        arrowImageView.image = [UIImage imageNamed:@"btn_arrow_normal"];
+        [self.contentView addSubview:arrowImageView];
+        [arrowImageView autoSetDimensionsToSize:CGSizeMake(22, 22)];
+        [arrowImageView autoPinEdgeToSuperviewEdge:ALEdgeTrailing withInset:2];
+        [arrowImageView autoAlignAxisToSuperviewAxis:ALAxisHorizontal];
+    }
+    return self;
+}
+
+- (void)awakeFromNib {
+    // Initialization code
+}
+
+- (void)setSelected:(BOOL)selected animated:(BOOL)animated {
+    [super setSelected:selected animated:animated];
+
+    // Configure the view for the selected state
+}
+
+#pragma mark - MMCellProtocol
+
+- (void)setContentWithObject:(id)object AtIndexPath:(NSIndexPath *)indexPath
+{
+    YAInviteWayObject *rowObject = [object objectAtIndex:indexPath.row];
+    
+    cionImageView.image = [UIImage imageNamed:rowObject.i_iconName];
+    nameLabel.text = rowObject.i_title;
+}
+
+@end

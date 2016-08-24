@@ -1,0 +1,46 @@
+//
+//  YAEditAskObject.h
+//  YouAsk
+//
+//  Created by wangyangyang on 15/7/2.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+
+/**
+ *  去问的内容封装后的对象
+ */
+@interface YAEditAskObject : NSObject
+
+/**
+ *  问题内容
+ */
+@property (nonatomic, copy) NSString *content;
+
+/**
+ *  问题补充说明
+ */
+@property (nonatomic, copy) NSString *ask_description;
+
+/**
+ *  选择的图片
+ */
+@property (nonatomic, copy) NSString *imagePath;
+
+/**
+ *  被邀请的用户id列表，逗号分隔
+ */
+@property (nonatomic, copy) NSString *invite_users;
+
+/**
+ *  悬赏积分
+ */
+@property (nonatomic, copy) NSString *reward_score;
+
+/**
+ *  领域的名称列表，逗号分隔
+ */
+@property (nonatomic, copy) NSString *fields;
+
+@end

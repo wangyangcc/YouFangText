@@ -1,0 +1,24 @@
+//
+//  MMFontTextView.m
+//  XinHuaPublish
+//
+//  Created by LDhai on 15/4/14.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import "MMFontTextView.h"
+
+@implementation MMFontTextView
+
+- (void) awakeFromNib
+{
+    self.font = [UIFont fontWithName:MMFontName size:self.font.pointSize];
+}
+
+- (void) setFont:(UIFont *)font
+{
+    UIFont *mmFont = [UIFont fontWithName:MMFontName size:font.pointSize];
+    [super setFont:mmFont];
+}
+
+@end

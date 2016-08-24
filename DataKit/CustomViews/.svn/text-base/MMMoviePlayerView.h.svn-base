@@ -1,0 +1,91 @@
+//
+//  MMMoviePlayer.h
+//  MMMoviePlayer
+//
+//  Created by LDhai on 15/5/3.
+//  Copyright (c) 2015年 LDhai All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+#import <MediaPlayer/MediaPlayer.h>
+
+@protocol MMMoviePlayerDelegate <NSObject>
+
+@optional
+- (void) mmPlayerFullScreenTapped;//进入全屏状态
+- (void) mmPlayerBackFullScreenTapped;//退出全屏状态
+- (void) mmPlayerExitTapped;//退出播放页面
+/**
+ *  从window移除的时候，调用
+ */
+- (void) mmplayerRemoveFormWindow;
+
+@end
+
+@interface MMMoviePlayerView : UIView
+
+@property (weak, nonatomic) id<MMMoviePlayerDelegate> m_delegate;
+
+/**
+ * 视频的播放地址
+ */
+@property (strong, nonatomic) NSString *mmPlayUrl;
+
+/**
+ * 视频的播放的状态
+ */
+@property (assign, nonatomic) MPMoviePlaybackState mmMoviePlaybackState;
+
+/**
+ * 视频的标题
+ */
+@property (strong, nonatomic) NSString *mmPlayTitle;
+
+/**
+ *  视频的初始化时的父视图
+ */
+@property (weak, nonatomic) UIView *mySuperView;
+
+/**
+ *当前播放器是否在全屏状态
+ */
+@property (assign, nonatomic) BOOL isFullScreen;
+
+/**
+ *  从window上移除的时候，清理掉播放界面，默认为NO
+ */
+@property (nonatomic, getter= isClearWhenRemoveFromWindow) BOOL clearWhenRemoveFromWindow;
+
+/**
+ *  准备播放
+ */
+- (void) mmPlayerReadyPlay;
+
+/**
+ *  开始播放
+ */
+- (void) mmPlayerPlay;
+
+/**
+ *  暂停播放
+ */
+- (void) mmPlayerPause;
+
+/**
+ *  停止播放
+ */
+- (void) mmPlayerStop;
+
+/**
+ *  更新当前视频播放时间
+ *
+ *  @param update
+ */
+- (void) updatePlayTime:(BOOL)update;
+
+/**
+ *  播放器清理并移除
+ */
+- (void) mmPlayerClear;
+
+@end

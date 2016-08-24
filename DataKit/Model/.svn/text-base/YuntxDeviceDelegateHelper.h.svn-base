@@ -1,0 +1,30 @@
+//
+//  YuntxDeviceDelegateHelper.h
+//  YouAsk
+//
+//  Created by wangyangyang on 15/7/23.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+#import "ECDeviceDelegate.h"
+#import "ECDevice.h"
+
+@class YAUser;
+@interface YuntxDeviceDelegateHelper : NSObject <ECDeviceDelegate>
+
+/**
+ *@brief 获取DeviceDelegateHelper单例句柄
+ */
++ (YuntxDeviceDelegateHelper*)sharedInstance;
+
+/**
+ *  登录云通讯
+ *
+ *  @param dictionary 启动接口数据
+ *  @param user       用户信息
+ */
+- (void)loginWithLaunchingAccessDictionary:(NSDictionary *)dictionary
+                               currentUser:(YAUser *)user;
+
+@end

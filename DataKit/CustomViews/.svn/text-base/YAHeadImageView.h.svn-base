@@ -1,0 +1,97 @@
+//
+//  YAHeadImageView.h
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/1.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+
+@protocol YAHeadImageViewDelegate;
+@interface YAHeadImageView : UIView
+
+/**
+ *  遮罩图片
+ */
+@property (nonatomic, copy) NSString *shadeImageName;
+
+/**
+ *  遮罩高亮图片
+ */
+@property (nonatomic, copy) NSString *shadeHighlightedImageName;
+
+/**
+ *  v 标签图片
+ */
+@property (nonatomic, copy) NSString *verifiedTypeImage;
+
+/**
+ *  是否是高亮状态
+ */
+@property (nonatomic, assign, getter= isyHighlighted) BOOL yHighlighted;
+
+/**
+ *  对应的用户id
+ */
+@property (nonatomic, copy) NSNumber *userId;
+
+/**
+ *  对应的云通讯用户id
+ */
+@property (nonatomic, copy) NSString *ytxUserId;
+
+/**
+ *  隐藏身份view
+ */
+@property (nonatomic, assign) BOOL hideVerifiedView;
+
+/**
+ *  是否是匿名回答
+ */
+@property (nonatomic, assign) BOOL isAnonymous;
+
+@property (nonatomic, weak) id<YAHeadImageViewDelegate> c_delegate;
+
+/**
+ *  刷新内容
+ *
+ *  @param imagePath    头像地址
+ *  @param userId       用户id
+ *  @param verifiedType 身份标示
+ */
+- (void)updateWithImagePath:(NSString *)imagePath
+                     userId:(NSNumber *)userId
+               verifiedType:(NSString *)verifiedType;
+
+/**
+ *  刷新头像
+ *
+ *  @param image 头像image
+ */
+- (void)updateWithImage:(UIImage *)image;
+
+/**
+ *  用户头像点击
+ */
+- (void)userPhotoTaped;
+
+/**
+ *  重新加载头像
+ */
+- (void)reloadHeadImage;
+
+/**
+ *  调整到用户空间
+ *
+ *  @param userId 用户id
+ */
++ (void)toUserSpace:(NSString *)userId;
+
+@end
+
+@protocol YAHeadImageViewDelegate <NSObject>
+
+- (void)headImgeViewTaped:(YAHeadImageView *)headimageView;
+
+@end

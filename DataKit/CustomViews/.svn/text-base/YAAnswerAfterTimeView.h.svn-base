@@ -1,0 +1,27 @@
+//
+//  YAAnswerAfterTimeView.h
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/3.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+
+@interface YAAnswerAfterTimeView : UIView
+
+/**
+ *  是否可以关闭
+ *
+ *  @return 结果
+ */
+- (BOOL)canClose;
+
+/**
+ *  距离现在多少秒
+ *
+ *  @return 多少秒
+ */
+- (NSTimeInterval)secondsAfterNow;
+
+@end

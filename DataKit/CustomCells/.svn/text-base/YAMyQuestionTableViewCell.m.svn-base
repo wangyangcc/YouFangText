@@ -1,0 +1,133 @@
+//
+//  YAMyQuestionTableViewCell.m
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/17.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import "YAMyQuestionTableViewCell.h"
+#import "YAHeadImageView.h"
+#import "YAUserQuestionObject.h"
+#import "UIViewController+Route.h"
+
+@interface YAMyQuestionTableViewCell ()
+{
+    YAUserQuestionObject *questionObject;
+}
+
+@property (weak, nonatomic) IBOutlet UIView *ui_allSubviews;
+@property (weak, nonatomic) IBOutlet YAHeadImageView *ui_headImage;
+@property (weak, nonatomic) IBOutlet UILabel *ui_nameLabel;
+@property (weak, nonatomic) IBOutlet NSLayoutConstraint *ui_nameLabelTrailingConstraint;
+
+@property (weak, nonatomic) IBOutlet UILabel *ui_questionLabel;
+@property (weak, nonatomic) IBOutlet UILabel *ui_answerLabel;
+@property (weak, nonatomic) IBOutlet UILabel *ui_noAnswerSignLabel; /**< 没有回答的提示文本 */
+@property (weak, nonatomic) IBOutlet NSLayoutConstraint *ui_answerLabelHeightConstraint;
+@property (weak, nonatomic) IBOutlet UILabel *ui_timeLabel;
+@property (weak, nonatomic) IBOutlet UIImageView *ui_lineImageView;
+
+@property (weak, nonatomic) IBOutlet UIImageView *ui_acceptImageView;
+@end
+
+@implementation YAMyQuestionTableViewCell
+
+- (id)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
+{
+    self = [[[NSBundle mainBundle] loadNibNamed:@"YAMyQuestionTableViewCell" owner:nil options:nil] lastObject];
+    return self;
+}
+
+- (void)awakeFromNib {
+    // Initialization code
+    
+    self.backgroundColor = MMRGBColor(244, 244, 246);
+    
+    self.ui_allSubviews.backgroundColor = [UIColor whiteColor];
+    
+    self.ui_headImage.verifiedTypeImage = @"img_userVip";
+}
+
+- (void)setSelected:(BOOL)selected animated:(BOOL)animated {
+    [super setSelected:selected animated:animated];
+    
+    // Configure the view for the selected state
+}
+
+//iOS8 设置cell分隔条
+- (UIEdgeInsets)layoutMargins
+{
+    return UIEdgeInsetsMake(0, 0, 0, 0);
+}
+
+#pragma mark - MMCellProtocol
+
+- (void)setContentWithObject:(id)object AtIndexPath:(NSIndexPath *)indexPath
+{
+    self.selectionStyle = UITableViewCellSelectionStyleNone;
+    
+    questionObject = [object objectAtIndex:indexPath.row];
+    
+    self.ui_acceptImageView.hidden = ([questionObject.u_adopted integerValue] == 0);
+    self.ui_nameLabelTrailingConstraint.constant = ([questionObject.u_adopted integerValue] == 0) ? 8 : 31;
+    self.ui_questionLabel.text = [NSString stringWithFormat:@"问:%@",questionObject.u_question_content];
+    
+    //判断改提问有没有回答
+    self.ui_answerLabelHeightConstraint.constant = questionObject.answerLabelHeight;
+    if (questionObject.u_answer_id && [questionObject.u_answer_id integerValue] > 0) {
+        self.ui_timeLabel.hidden = NO;
+        self.ui_nameLabel.hidden = NO;
+        self.ui_answerLabel.hidden = NO;
+        self.ui_headImage.hidden = NO;
+        self.ui_headImage.shadeImageName = @"img_head_homeBig";
+        self.ui_timeLabel.text = questionObject.u_update_time;
+        self.ui_nameLabel.attributedText = [self nameLabelContentWithNameStr:questionObject.u_user_name];
+        self.ui_answerLabel.text = questionObject.u_answer_content;
+        [self.ui_headImage updateWithImagePath:questionObject.u_head_photo userId:questionObject.u_create_user verifiedType:questionObject.u_verified_type];
+        self.ui_headImage.isAnonymous = [questionObject.u_anonymous boolValue];
+        
+        self.ui_noAnswerSignLabel.hidden = YES;
+    }
+    else {
+        self.ui_timeLabel.hidden = YES;
+        self.ui_nameLabel.hidden = YES;
+        self.ui_answerLabel.hidden = YES;
+        self.ui_headImage.hidden = YES;
+        self.ui_timeLabel.text = nil;
+        self.ui_nameLabel.attributedText = nil;
+        self.ui_answerLabel.text = nil;
+        [self.ui_headImage updateWithImagePath:nil userId:nil verifiedType:nil];
+        self.ui_headImage.isAnonymous = NO;
+        
+        self.ui_noAnswerSignLabel.hidden = NO;
+    }
+    //end
+}
+
+#pragma mark - Private Method
+
+- (NSMutableAttributedString *)nameLabelContentWithNameStr:(NSString *)nameStr
+{
+    NSString *firstString = nameStr?nameStr:@"";
+    NSString *secondString = @"  答";
+    NSString *allString = [NSString stringWithFormat:@"%@%@",firstString,secondString];
+    
+    NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:allString];
+    [attributedString addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:14] range:NSMakeRange(0, allString.length)];
+    [attributedString addAttribute:NSForegroundColorAttributeName value:[UIColor colorWithHexString:@"#2AA3EC"] range:NSMakeRange(0, firstString.length)];
+    [attributedString addAttribute:NSForegroundColorAttributeName value:MMRGBColor(49, 49, 49) range:NSMakeRange(firstString.length, secondString.length)];
+    return attributedString;
+}
+
+#pragma mark - event response
+
+- (IBAction)lookQuestionTaped:(id)sender
+{
+    if (questionObject.u_user_name == nil) {
+        questionObject.u_user_name = @"Ta";
+    }
+    [UIViewController triggerRoute:OPEN_QUESTION_DETAIL_PAGE withParameters:@{@"questionId" : questionObject.u_question_id?:@"0", @"createUserName" : questionObject.u_question_user_name?:@"TA"}];
+}
+
+@end

@@ -1,0 +1,43 @@
+//
+//  ScrollViewVCTopRightProtocol.h
+//  XinHuaInternation
+//
+//  Created by wangyangyang on 15/1/26.
+//  Copyright (c) 2015年 Xin Hua. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+
+@protocol ScrollViewVCTopChoiceProtocol <NSObject>
+
+@optional
+
+- (void)scrollViewVCTopChoiceWithIndex:(NSInteger)index;
+
+@end
+
+@protocol ScrollViewVCTopRightProtocol <NSObject>
+
+@property (nonatomic, weak) id<ScrollViewVCTopChoiceProtocol> s_delegate;
+@property (nonatomic, strong) NSMutableArray *dataArray;
+
+- (UIButton *)scrollTitleRightButton;
+
+- (void)topChoiceViewOpen:(NSArray *)navArray
+                  subView:(UIView *)subView
+            navScrollView:(UIView *)navScrollView;
+- (void)topChoiceViewClose;
+
+@optional
+
+/**
+ *  是否显示出来，用户拦截用户事件
+ */
+@property (nonatomic) BOOL isSelfDisplay;
+
+/**
+ *  拦截到用户事件时候的响应
+ */
+- (void)touchInterceptingViewResponder;
+
+@end

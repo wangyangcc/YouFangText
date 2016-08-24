@@ -1,0 +1,31 @@
+//
+//  MMFontButton.m
+//  iOS8Project
+//
+//  Created by LDhai on 15/4/4.
+//  Copyright (c) 2015年 LDhai. All rights reserved.
+//
+
+#import "MMFontButton.h"
+
+@implementation MMFontButton
+
+//- (void) awakeFromNib
+//{
+//    [self setTitle:[self titleForState:UIControlStateNormal] forState:UIControlStateNormal];
+//}
+//
+//- (void) setTitle:(NSString *)title forState:(UIControlState)state
+//{
+//    [super setTitle:title forState:state];
+//    UIFont *mmBtnFont = self.titleLabel.font;
+//    self.titleLabel.font = [UIFont fontWithName:MMFontName size:mmBtnFont.pointSize];
+//}
+//
+//- (void) setMmButtonTitleFont:(UIFont *)mmButtonTitleFont
+//{
+//    self.titleLabel.font = [UIFont fontWithName:MMFontName size:mmButtonTitleFont.pointSize];
+//}
+
+
+@end

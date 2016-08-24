@@ -1,0 +1,182 @@
+//
+//  YALoginCheckHelper.m
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/26.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import "YALoginCheckHelper.h"
+#import "CCClientRequest.h"
+#import "MMAppDelegateHelper.h"
+#import "DeviceDelegateHelper.h"
+#import "MMPushManager.h"
+
+@interface YALoginCheckHelper () <MMClientRequestCallBackDelegate>
+{
+    NSInteger loginNumber;//超过两次就停止
+}
+
+@property (nonatomic, strong) CCClientRequest *clientRequest;
+
+@property (nonatomic, strong) CCClientRequest *geTuiRequest;
+
+@property (nonatomic, strong) NSMutableArray *invocationSucceedArrays;
+@property (nonatomic, strong) NSMutableArray *invocationFailArrays;
+
+@property (assign) BOOL isLoging;/**< 是否在登录中 */
+
+@end
+
+@implementation YALoginCheckHelper
+
++ (YALoginCheckHelper *)shareHelper
+{
+    static YALoginCheckHelper *helper;
+    static dispatch_once_t one_t;
+    dispatch_once(&one_t, ^{
+        helper = [[YALoginCheckHelper alloc] init];
+        helper->loginNumber = 1;
+    });
+    return helper;
+}
+
+- (BOOL)isNeedLoginCheck
+{
+    //如果进行过登录检查，则返回
+    if (self.isLoginChecked) {
+        return NO;
+    }
+    //如果正在检查中，返回
+    if (self.isLoging) {
+        return YES;
+    }
+    self.isLoging = YES;
+    
+    YAUser *user = [[MMAppDelegateHelper shareHelper] currentUser];
+    @try {
+        NSArray *userIdAndPs = [[MMAppDelegateHelper shareHelper] getLoginUserNameAndPs];
+        [self.clientRequest appLaunchingAccessWithUserId:[userIdAndPs firstObject] password:[userIdAndPs lastObject] loginFeature:user.loginFeature];
+    }
+    @catch (NSException *exception) {
+        NSLog(@"YALoginCheckHelper-----数据解析失败------%@",user);
+    }
+    return YES;
+}
+
+- (void)addOneSucceedInvocation:(NSInvocation *)oneInvocation
+{
+    if (oneInvocation == nil) {
+        return;
+    }
+    if ([self.invocationSucceedArrays containsObject:oneInvocation]) {
+        NSLog(@"YALoginCheckHelper---addOneSucceedInvocation---添加相同Invocation");
+        return;
+    }
+    [self.invocationSucceedArrays addObject:oneInvocation];
+}
+
+- (void)addOneFailInvocation:(NSInvocation *)oneInvocation
+{
+    if (oneInvocation == nil) {
+        return;
+    }
+    [self.invocationFailArrays addObject:oneInvocation];
+}
+
+#pragma mark - MMClientRequestCallBackDelegate
+
+- (void)requestDidSuccessCallBack:(CCClientRequest *)clientRequest
+{
+    if ([clientRequest.requestMethodName isEqualToString:APP_ACCESS_METHOD]) {
+        self.isLoginChecked = YES;
+        //用户登录后的操作
+        YAUser *userModel = [clientRequest.responseObject firstObject];
+        if (userModel && [userModel isKindOfClass:[YAUser class]]) {
+            [[MMAppDelegateHelper shareHelper] updateWithUser:userModel];
+            //给要保存的user添加现有的loginfeature
+            YAUser *currentUser = [[MMAppDelegateHelper shareHelper] currentUser];
+            userModel.loginFeature = currentUser.loginFeature;
+            //end
+            //如果当前云通讯登录状态为失败，则重连
+            if ([[DeviceDelegateHelper sharedInstance] connectState] == State_ConnectFailed) {
+                [[DeviceDelegateHelper sharedInstance] loginWithAccessDictionary:[clientRequest.responseObject lastObject] currentUser:userModel];
+            }
+            //end
+            
+            //调用个推clientId接口
+            [self.geTuiRequest notifyGeTuiClientId:MMAppDelegate.pushManager.clientId userId:[NSString stringWithFormat:@"%@",userModel.userId]];
+            //end
+        }
+        [[MMAppDelegateHelper shareHelper] saveLaunchAccessDataWithDic:[clientRequest.responseObject lastObject]];
+        
+        [[NSNotificationCenter defaultCenter] postNotificationName:kLoginCheckDoneNotification object:nil];
+        
+        self.isLoging = NO;
+        loginNumber = 0;
+        [self.invocationSucceedArrays makeObjectsPerformSelector:@selector(invoke)];
+        self.invocationFailArrays = [NSMutableArray array];
+        self.invocationSucceedArrays = [NSMutableArray array];
+    }
+    else {
+        self.geTuiRequest = nil;
+    }
+}
+
+- (void)requestDidFailCallBack:(CCClientRequest *)clientRequest
+{
+    if ([clientRequest.requestMethodName isEqualToString:APP_ACCESS_METHOD]) {
+        loginNumber ++;
+        self.isLoging = NO;
+        if (loginNumber > 2) {
+            loginNumber = 1;
+            self.isLoginChecked = YES;
+            [self.invocationFailArrays makeObjectsPerformSelector:@selector(invoke)];
+            self.invocationFailArrays = [NSMutableArray array];
+            self.invocationSucceedArrays = [NSMutableArray array];
+            return;
+        }
+        [self isNeedLoginCheck];
+    }
+    else {
+        self.geTuiRequest = nil;
+    }
+}
+
+#pragma mark - getters and setters
+
+- (CCClientRequest *)clientRequest
+{
+    if (_clientRequest == nil) {
+        _clientRequest = [[CCClientRequest alloc] init];
+        _clientRequest.c_delegate = self;
+    }
+    return _clientRequest;
+}
+
+- (CCClientRequest *)geTuiRequest
+{
+    if (_geTuiRequest == nil) {
+        _geTuiRequest = [[CCClientRequest alloc] init];
+        _geTuiRequest.c_delegate = self;
+    }
+    return _geTuiRequest;
+}
+
+- (NSMutableArray *)invocationSucceedArrays
+{
+    if (_invocationSucceedArrays == nil) {
+        _invocationSucceedArrays = [NSMutableArray array];
+    }
+    return _invocationSucceedArrays;
+}
+
+- (NSMutableArray *)invocationFailArrays
+{
+    if (_invocationFailArrays == nil) {
+        _invocationFailArrays = [NSMutableArray array];
+    }
+    return _invocationFailArrays;
+}
+
+@end

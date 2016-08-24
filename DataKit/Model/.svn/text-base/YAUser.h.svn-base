@@ -1,0 +1,82 @@
+//
+//  YAUser.h
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/23.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+#import "MTLJSONAdapter.h"
+#import "MTLModel.h"
+#import "MMCellObjectProtocol.h"
+
+@interface YAUser : MTLModel <MTLJSONSerializing, MMCellObjectProtocol>
+
+/**
+ *  用户id
+ */
+@property (nonatomic, copy) NSNumber *userId;
+
+/**
+ *  用户名
+ */
+@property (nonatomic, copy) NSString *userName;
+
+/**
+ *  用户名 2
+ */
+@property (nonatomic, copy) NSString *nickName;
+
+/**
+ *  密码
+ */
+@property (nonatomic, copy) NSString *password;
+
+/**
+ *  上次正式登录识别码
+ */
+@property (nonatomic, copy) NSString *loginFeature;
+
+/**
+ *  头像
+ */
+@property (nonatomic, copy) NSString *headPhoto;
+
+/**
+ *  身份验证类型 0-未认证  1-认证
+ */
+@property (nonatomic, copy) NSString *verifiedType;
+
+/**
+ *  容联云通讯子账户的授权令牌
+ */
+@property (nonatomic, copy) NSString *ytx_token;
+
+/**
+ *  容联云通讯VoIP号码
+ */
+@property (nonatomic, copy) NSString *ytx_voip_account;
+
+/**
+ *  容联云通讯VoIP密码
+ */
+@property (nonatomic, copy) NSString *ytx_voip_password;
+
+//用于待回答问题列表
+@property (nonatomic, copy) NSString *answer_schedule;
+@property (nonatomic, copy) NSNumber *remind_flag;
+
+//用户待邀请用户列表
+@property (nonatomic, copy) NSString *awaitUserName;
+
+@property (nonatomic, assign) CGFloat cacheCellHeight; /**< 缓存的cell高度 */
+
+/**
+ *  得到可用的用户名
+ *
+ *  @return 用户名
+ */
+- (NSString *)getAvailableUserName;
+
+@end

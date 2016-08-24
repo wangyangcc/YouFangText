@@ -1,0 +1,13 @@
+//
+//  YAEditAskObject.m
+//  YouAsk
+//
+//  Created by wangyangyang on 15/7/2.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import "YAEditAskObject.h"
+
+@implementation YAEditAskObject
+
+@end

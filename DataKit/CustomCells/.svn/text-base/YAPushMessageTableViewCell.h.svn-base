@@ -1,0 +1,13 @@
+//
+//  YAPushMessageTableViewCell.h
+//  YouAsk
+//
+//  Created by wangyangyang on 15/7/10.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+
+@interface YAPushMessageTableViewCell : UITableViewCell
+
+@end

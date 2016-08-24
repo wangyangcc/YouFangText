@@ -1,0 +1,23 @@
+//
+//  YAPushAskTableViewCell.h
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/5.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+#import "MMCellProtocol.h"
+
+@protocol YAPushAskTableViewCellDelegate;
+@interface YAPushAskTableViewCell : UITableViewCell <MMCellProtocol>
+
+@property (nonatomic, weak) id<YAPushAskTableViewCellDelegate> c_delegate;
+
+@end
+
+@protocol YAPushAskTableViewCellDelegate <NSObject>
+
+- (void)replayButtonTaped:(NSIndexPath *)indexPath;
+
+@end

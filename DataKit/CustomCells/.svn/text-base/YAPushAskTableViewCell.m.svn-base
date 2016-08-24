@@ -1,0 +1,111 @@
+//
+//  YAPushAskTableViewCell.m
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/5.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import "YAPushAskTableViewCell.h"
+#import "YAHeadImageView.h"
+#import "YACommentObject.h"
+
+@interface YAPushAskTableViewCell ()
+
+@property (weak, nonatomic) IBOutlet UIView *ui_allViewSubviews;
+
+@property (weak, nonatomic) IBOutlet YAHeadImageView *ui_headImageView;
+
+@property (weak, nonatomic) IBOutlet UILabel *ui_nameLabel;
+
+@property (weak, nonatomic) IBOutlet UILabel *ui_timeLabel;
+
+@property (weak, nonatomic) IBOutlet UILabel *ui_contentLabel;
+
+@property (weak, nonatomic) IBOutlet UILabel *ui_baseQuestionLabel;
+
+@property (weak, nonatomic) IBOutlet NSLayoutConstraint *ui_baseQuestionLabelHeightConstraint;
+
+@property (nonatomic, strong) NSIndexPath *currentIndexPath;
+
+@end
+
+@implementation YAPushAskTableViewCell
+
+- (id)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
+{
+    self = [[[NSBundle mainBundle] loadNibNamed:@"YAPushAskTableViewCell" owner:nil options:nil] lastObject];
+    return self;
+}
+
+- (void)awakeFromNib {
+    // Initialization code
+    self.backgroundColor = MMRGBColor(244, 244, 246);
+    self.ui_allViewSubviews.backgroundColor = [UIColor whiteColor];
+    
+    self.ui_headImageView.shadeImageName = @"img_head_homeBig";
+    self.ui_headImageView.verifiedTypeImage = @"img_userVip";
+}
+
+- (void)setSelected:(BOOL)selected animated:(BOOL)animated {
+    [super setSelected:selected animated:animated];
+
+    // Configure the view for the selected state
+}
+
+//iOS8 设置cell分隔条
+- (UIEdgeInsets)layoutMargins
+{
+    return UIEdgeInsetsZero;
+}
+
+#pragma mark - Private Method
+
+- (NSMutableAttributedString *)nameLabelContentWithNameStr:(NSString *)nameStr
+{
+    NSString *firstString = nameStr?nameStr:@"";
+    NSString *secondString = @"  追问";
+    NSString *allString = [NSString stringWithFormat:@"%@%@",firstString,secondString];
+    
+    NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:allString];
+    [attributedString addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:14] range:NSMakeRange(0, allString.length)];
+    [attributedString addAttribute:NSForegroundColorAttributeName value:[UIColor colorWithHexString:@"#2AA3EC"] range:NSMakeRange(0, firstString.length)];
+    [attributedString addAttribute:NSForegroundColorAttributeName value:MMRGBColor(49, 49, 49) range:NSMakeRange(firstString.length, secondString.length)];
+    return attributedString;
+}
+
+#pragma mark - MMCellProtocol
+
+- (void)setContentWithObject:(id)object AtIndexPath:(NSIndexPath *)indexPath
+{
+    self.selectionStyle = UITableViewCellSelectionStyleNone;
+    self.currentIndexPath = indexPath;
+    
+    YACommentObject *cellObject = object[indexPath.row];
+    
+    [self.ui_headImageView updateWithImagePath:cellObject.c_head_photo
+                                        userId:cellObject.c_create_user
+                                  verifiedType:cellObject.c_verified_type];
+    self.ui_headImageView.isAnonymous = [cellObject.c_anonymous boolValue];
+    self.ui_nameLabel.attributedText = [self nameLabelContentWithNameStr:cellObject.c_user_name];
+    
+    self.ui_contentLabel.text = cellObject.c_content;
+    self.ui_timeLabel.text = cellObject.c_create_time;
+    self.ui_baseQuestionLabel.text = [NSString stringWithFormat:@"原答案:%@",cellObject.c_answer_content];
+    self.ui_baseQuestionLabelHeightConstraint.constant = cellObject.answerLabelHeight;
+}
+
+- (void)setCellDelegate:(id) object
+{
+    self.c_delegate = object;
+}
+
+#pragma mark - enent response
+
+- (IBAction)replayButtonTaped:(id)sender
+{
+    [self.c_delegate replayButtonTaped:self.currentIndexPath];
+}
+
+
+@end

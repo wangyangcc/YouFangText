@@ -1,0 +1,69 @@
+//
+//  FYCoreTextProtocol.h
+//  HyYuLe
+//
+//  Created by Wang Yang on 13-7-3.
+//  Copyright (c) 2013年 Hang Zhou Zhang Niu. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+#import <CoreText/CoreText.h>
+
+@protocol FYCoreTextProtocol <NSObject>
+
+- (void)setCTText:(NSString *)text;
+
++ (void)setCTTextParagraphStyle:(NSMutableAttributedString *)stringAttributed;
+
++ (NSInteger)getCTTextParagraphHei:(NSString *)text textWid:(NSInteger)textWid;
+
+@end
+
+#pragma mark - NSMutableAttributedString  (FYCoreTextProtocol)
+
+
+@interface NSMutableAttributedString (FYCoreTextProtocol)
+
+- (NSInteger)getMutableAttributedStringHeightWithWidthValue:(NSInteger) width;
+
+@end
+
+#define TextViewMostHeight 100000 //这里的高要设置足够大,表示资讯文本显示的最大高度
+
+@implementation NSMutableAttributedString (FYCoreTextProtocol)
+
+- (NSInteger)getMutableAttributedStringHeightWithWidthValue:(NSInteger) width
+{
+    NSInteger total_height = 0;
+    
+    CTFramesetterRef framesetter = CTFramesetterCreateWithAttributedString((CFAttributedStringRef)self);    //string 为要计算高度的NSAttributedString
+    CGRect drawingRect = CGRectMake(0, 0, width, TextViewMostHeight);  
+    CGMutablePathRef path = CGPathCreateMutable();
+    CGPathAddRect(path, NULL, drawingRect);
+    CTFrameRef textFrame = CTFramesetterCreateFrame(framesetter,CFRangeMake(0,0), path, NULL);
+    CGPathRelease(path);
+    
+    
+    NSArray *linesArray = (NSArray *) CTFrameGetLines(textFrame);
+    
+    CGPoint origins[[linesArray count]];
+    CTFrameGetLineOrigins(textFrame, CFRangeMake(0, 0), origins);
+    
+    NSInteger line_y = (NSInteger) origins[[linesArray count] -1].y;  //最后一行line的原点y坐标
+    
+    CGFloat ascent;
+    CGFloat descent;
+    CGFloat leading;
+    
+    CTLineRef line = (__bridge CTLineRef) [linesArray objectAtIndex:[linesArray count]-1];
+    CTLineGetTypographicBounds(line, &ascent, &descent, &leading);
+    
+    total_height = TextViewMostHeight - line_y + (NSInteger) descent +1;    //+1为了纠正descent转换成int小数点后舍去的值
+    
+    CFRelease(textFrame);
+    CFRelease(framesetter);
+    
+    return total_height;
+}
+
+@end

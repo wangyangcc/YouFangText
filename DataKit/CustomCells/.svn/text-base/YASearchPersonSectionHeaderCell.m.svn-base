@@ -1,0 +1,59 @@
+//
+//  YASearchPersonSectionHeaderCell.m
+//  YouAsk
+//
+//  Created by wangyangyang on 15/7/11.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import "YASearchPersonSectionHeaderCell.h"
+#import "YAInvitePersonObject.h"
+
+@implementation YASearchPersonSectionHeaderCell
+
+- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
+{
+    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
+    if (self) {
+        
+        self.textLabel.font = [UIFont systemFontOfSize:12];
+        [self.textLabel setTextColor:MMRGBColor(121, 136, 137)];
+        
+        UIView *lineView = [[UIView alloc] init];
+        lineView.backgroundColor = MMRGBColor(233, 237, 240);
+        [self.contentView addSubview:lineView];
+        [lineView autoSetDimension:ALDimensionHeight toSize:0.5];
+        [lineView autoPinEdgeToSuperviewEdge:ALEdgeLeading];
+        [lineView autoPinEdgeToSuperviewEdge:ALEdgeTrailing];
+        [lineView autoPinEdgeToSuperviewEdge:ALEdgeBottom];
+    }
+    return self;
+}
+
+- (void)awakeFromNib {
+    // Initialization code
+}
+
+- (void)setSelected:(BOOL)selected animated:(BOOL)animated {
+    [super setSelected:selected animated:animated];
+
+    // Configure the view for the selected state
+}
+
+//iOS8 设置cell分隔条
+- (UIEdgeInsets)layoutMargins
+{
+    return UIEdgeInsetsZero;
+}
+
+#pragma mark - MMCellProtocol
+
+- (void)setContentWithObject:(id)object AtIndexPath:(NSIndexPath *)indexPath
+{
+    self.selectionStyle = UITableViewCellSelectionStyleNone;
+    
+    YAInvitePersonObject *cellObject = object[indexPath.row];
+    self.textLabel.text = cellObject.title;
+}
+
+@end

@@ -1,0 +1,382 @@
+//
+//  ScrollViewVC.m
+//  ScrollVCAndNavBar
+//
+//  Created by lcc on 14-3-3.
+//  Copyright (c) 2014年 lcc. All rights reserved.
+//
+
+#import "ScrollViewVC.h"
+#import "MMFontLabel.h"
+#import "MMScrollViewObjectProtocol.h"
+#import "MMSideslipScrollview.h"
+
+#define HUALABELTAG 100000
+
+@interface ScrollViewVC() <UIScrollViewDelegate, ScrollViewVCTopChoiceProtocol>
+{
+
+    MMSideslipScrollview *vcScrollView;
+    
+    //所有类型总数
+    NSInteger vcCount;
+    
+    //容器大小
+    CGFloat selfHeight;
+    
+    //总长度用于居中
+    CGFloat allWidth;
+    
+}
+
+@property (nonatomic, assign) CGFloat currentIndex;//当前选中的index
+@property (nonatomic, strong) NSMutableDictionary *vcDictionary;
+@property (nonatomic, strong) id<ScrollViewVCTopRightProtocol> topRightView;
+@property (nonatomic, strong) id<ScrollViewTopNavProtocol> topNavView;
+
+@end
+
+@implementation ScrollViewVC
+
+- (void)dealloc
+{
+    self.navArray = nil;
+    self.vcDictionary = nil;
+    self.vcTypeDictionary = nil;
+    self.vcString = nil;
+    self.actionString = nil;
+
+    vcScrollView = nil;
+    
+    vcCount = 0;
+}
+
+- (id)initWithFrame:(CGRect)frame
+{
+    self = [super initWithFrame:frame];
+    if (self)
+    {
+        allWidth = frame.size.width;
+        
+        //窗体容器初始化
+        self.vcDictionary = [[NSMutableDictionary alloc] init];
+        
+        selfHeight = frame.size.height;
+
+        //添加滚动窗体容器
+        vcScrollView = [[MMSideslipScrollview alloc] init];
+        vcScrollView.showsHorizontalScrollIndicator = NO;
+        vcScrollView.frame = CGRectMake(0, _navScreenHeight, frame.size.width, frame.size.height - _navScreenHeight);
+        vcScrollView.backgroundColor = [UIColor clearColor];
+        [self addSubview:vcScrollView];
+        vcScrollView.delegate = self;
+        vcScrollView.hidden = YES;
+        vcScrollView.bounces = NO;
+        vcScrollView.pagingEnabled = YES;
+
+    }
+    return self;
+}
+
+#pragma mark -
+#pragma mark - custom method
+
+- (void)setTopRightProtocolView:(id<ScrollViewVCTopRightProtocol>)topRightView
+{
+    self.topRightView = topRightView;
+}
+
+- (void)setTopNavProtocolView:(id<ScrollViewTopNavProtocol>)topNavView
+{
+    if (_topNavView) {
+        [(UIView *)_topNavView removeFromSuperview];
+    }
+    self.topNavView = topNavView;
+    [self addSubview:(UIView *)topNavView];
+}
+
+/**
+ *  添加导航栏，此方法应为设置参数后最后调用
+ */
+- (void)addNavView
+{
+    [self addNavViewWithDefaultIndex:0];
+}
+
+//添加导航栏
+- (void) addNavViewWithDefaultIndex:(NSInteger)defaultIndex
+{
+    
+    [self dealDefaultValue];
+    
+    vcCount = [self.navArray count];
+    if (self.topNavView) {
+        self.topNavView.navArray = [self.navArray mutableCopy];
+    }
+    
+    //如果滑动标题右边有按钮
+    if (self.topRightView) {
+        self.topRightView.s_delegate = self;
+        NSAssert(self.topNavView, @"ScrollViewVC-----addNavViewWithDefaultIndex------self.topNavview未指定");
+        self.topNavView.isTopRightView = YES;
+        UIButton *button = [self.topRightView scrollTitleRightButton];
+        [self.topNavView addTopRightView:(id<ScrollViewVCTopRightProtocol>)button];
+        [button addTarget:self action:@selector(scrollTitleRightButtonTaped) forControlEvents:UIControlEventTouchUpInside];
+    }
+
+    
+    if (vcCount > 0)
+    {
+        vcScrollView.hidden = NO;
+        
+        //设置窗体容器一些属性
+        vcScrollView.contentSize = CGSizeMake(ScreenWidth*vcCount, vcScrollView.frame.size.height);
+    }
+    if (self.topNavView) {
+        [self.topNavView addNavViewWithDefaultIndex:defaultIndex];
+    }
+
+    //动态创建滚动窗体--单每个窗体格式是一样的
+    [self createVcWithIndex:defaultIndex];
+    
+    //vcScrollView滑动到默认的defaultIndex的位置
+    [vcScrollView setContentOffset:CGPointMake(ScreenWidth * defaultIndex, 0) animated:NO];
+}
+
+/**
+ *  根据新的nav数组更新
+ *
+ *  @param navArrayTmp 新的 nav数组
+ */
+- (void)updateNavViewWithNavArray:(NSMutableArray *)navArrayTmp
+{
+    //算出当前的
+    id<MMScrollViewObjectProtocol> tmpObj = [self.navArray objectAtIndex:self.currentIndex];
+    NSString *currentIndexId = tmpObj.s_id;
+    
+    self.navArray = navArrayTmp;
+    
+    if (self.topNavView) {
+        //移除滑动导航栏的所有栏目
+        [self.topNavView removeAllNavSubViews];
+    }
+
+    //移动页码到之前选择的位置
+    NSPredicate *predicateID = [NSPredicate predicateWithFormat:@"%K == %@",@"s_id", currentIndexId];
+    NSArray *results = [self.navArray filteredArrayUsingPredicate:predicateID];
+    if (results && [results count] >= 1) {
+        id<MMScrollViewObjectProtocol> tmpObj = [results firstObject];
+        NSInteger newCurrentIndex = [self.navArray indexOfObject:tmpObj];
+        [self addNavViewWithDefaultIndex:newCurrentIndex];
+        //[self scrollViewDidEndDecelerating:vcScrollView];
+    }
+    else
+    {
+        
+        //默认为0
+        [self addNavViewWithDefaultIndex:0];
+        
+    }
+}
+
+//动态创建窗体
+- (void) createVcWithIndex:(NSInteger) index
+{
+    id<MMScrollViewObjectProtocol> tmpObj = [self.navArray objectAtIndex:index];
+    NSAssert([tmpObj conformsToProtocol:@protocol(MMScrollViewObjectProtocol)], @"ScrollViewVC --- navArray的数组不包含符合 MMScrollViewObjectProtocol协议的object");
+    
+    UIViewController *tmpVc = nil;
+    //判读vc是否被创建
+    if (![self.vcDictionary.allKeys containsObject:tmpObj.s_keyString])
+    {
+        if (self.vcTypeDictionary == nil)
+        {
+            tmpVc = [[NSClassFromString(self.vcString) alloc] init];
+            tmpVc.view.frame = CGRectMake(ScreenWidth*index, 0, ScreenWidth, CGRectGetHeight(vcScrollView.bounds));
+            [self.vcDictionary setObject:tmpVc forKey:tmpObj.s_keyString];
+            [vcScrollView addSubview:tmpVc.view];
+        }
+        else
+        {
+            NSString *tmpVcString = (NSString *)[self.vcTypeDictionary objectForKey:tmpObj.s_vcType];
+            tmpVc = [[NSClassFromString(tmpVcString) alloc] init];
+            tmpVc.view.frame = CGRectMake(ScreenWidth*index, 0, ScreenWidth, CGRectGetHeight(vcScrollView.bounds));
+            [self.vcDictionary setObject:tmpVc forKey:tmpObj.s_keyString];
+            [vcScrollView addSubview:tmpVc.view];
+        }
+
+    }
+    else {
+        //如果vc已经被创建了，则判断vc.view x坐标，如果index变了，则需要移动vc为位置
+        tmpVc = [self.vcDictionary objectForKey:tmpObj.s_keyString];
+        if ((NSInteger)CGRectGetMinX(tmpVc.view.frame) != (NSInteger)(ScreenWidth*index)) {
+            tmpVc.view.frame = CGRectMake(ScreenWidth*index, 0, ScreenWidth, CGRectGetHeight(vcScrollView.bounds));
+        }
+    }
+    
+    //根据返回的方法明动态调用
+    SEL selector = NSSelectorFromString([NSString stringWithFormat:@"%@:",self.actionString]);
+    if ([tmpVc respondsToSelector:selector])
+    {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+        [tmpVc performSelector:selector withObject:tmpObj];
+#pragma clang diagnostic pop
+    }
+}
+
+//默认值处理
+- (void) dealDefaultValue
+{
+    if (self.vcString == nil)
+    {
+        self.vcString = @"UIViewController";
+    }
+}
+
+- (void)setNavScreenHeight:(CGFloat)navScreenHeight
+{
+    _navScreenHeight = navScreenHeight;
+    vcScrollView.frame = CGRectMake(0, _navScreenHeight, CGRectGetWidth(self.frame), CGRectGetHeight(self.frame) - _navScreenHeight);
+    if (self.topNavView) {
+        self.topNavView.navScreenHeight = navScreenHeight;
+    }
+}
+
+- (void) setCurrentIndex:(CGFloat)currentIndex
+{
+    if (_currentIndex != currentIndex)
+    {
+        if (_s_delegate && [_s_delegate respondsToSelector:@selector(scrollViewVCColumnChange:currentIndex:)]) {
+            [_s_delegate scrollViewVCColumnChange:self currentIndex:currentIndex];
+        }
+    }
+    if (self.topNavView) {
+        self.topNavView.currentIndex = currentIndex;
+    }
+    _currentIndex = currentIndex;
+}
+
+#pragma mark -
+#pragma mark - 控件事件
+
+- (void)scrollTitleRightButtonTaped
+{
+    //弹出选择框
+    [self.topRightView topChoiceViewOpen:self.navArray subView:self navScrollView:(UIView *)self.topNavView];
+}
+
+- (void) selectAtIndex:(NSInteger) index
+{
+    self.currentIndex = index;
+    [vcScrollView setContentOffset:CGPointMake(ScreenWidth*self.currentIndex, vcScrollView.contentOffset.y) animated:NO];
+    
+    [self createVcWithIndex:self.currentIndex];
+    
+    [self.topNavView adjustNavScrollViewContentOffset:self.currentIndex];
+}
+
+/**
+ *  刷新vc
+ */
+- (void)updateViewControllerWithIndex:(NSInteger)index
+{
+    if (index < 0 || index >= [self.navArray count]) {
+        return;
+    }
+    id<MMScrollViewObjectProtocol> tmpObj = [self.navArray objectAtIndex:index];
+    UIViewController *tmpVc = [self.vcDictionary objectForKey:tmpObj.s_keyString];
+    if (tmpVc == nil) {
+        return;
+    }
+    //根据返回的方法明动态调用
+    SEL selector = NSSelectorFromString([NSString stringWithFormat:@"%@:",self.actionString]);
+    if ([tmpVc respondsToSelector:selector])
+    {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+        [tmpVc performSelector:selector withObject:tmpObj];
+#pragma clang diagnostic pop
+    }
+}
+
+/**
+ *  状态栏点击事件
+ */
+- (void)statusBarTappedAction
+{
+    [vcScrollView.subviews enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+        UIView *objView = (UIView *)obj;
+        if ((NSInteger)objView.frame.origin.x == (NSInteger)self.currentIndex*ScreenWidth) {
+            [objView.subviews enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+                if ([(UIView *)obj isKindOfClass:[UIScrollView class]]) {
+                    [(UIScrollView *)obj setContentOffset:CGPointMake(0, 0) animated:YES];
+                    *stop = YES;
+                }
+            }];
+            *stop = YES;
+        }
+    }];
+}
+
+#pragma mark -
+#pragma mark - <ScrollViewVCDelegate> +号按钮点击事件
+
+- (void)titleRightBtnTapped
+{
+    
+}
+
+#pragma mark -
+#pragma mark - scroll delegate
+
+- (void) scrollViewDidScroll:(UIScrollView *)scrollView
+{
+    if (self.topNavView && [self.topNavView respondsToSelector:@selector(scrollViewDidScroll:)]) {
+        [self.topNavView scrollViewDidScroll:scrollView];
+    }
+}
+
+- (void) scrollViewWillBeginDragging:(UIScrollView *)scrollView
+{
+    //每页宽度
+    CGFloat pageWidth = scrollView.frame.size.width;
+    //根据当前的坐标与页宽计算当前页码
+    self.currentIndex = floor((scrollView.contentOffset.x - pageWidth/2)/pageWidth) + 1;
+    
+    if (self.topNavView && [self.topNavView respondsToSelector:@selector(scrollViewWillBeginDragging:)]) {
+        [self.topNavView scrollViewWillBeginDragging:scrollView];
+    }
+}
+
+- (void) scrollViewDidEndDecelerating:(UIScrollView *)scrollView
+{
+    [self scrollViewDidEndDecelerating:scrollView createNewVC:YES];
+}
+
+- (void)scrollViewDidEndScrollingAnimation:(UIScrollView *)scrollView
+{
+    if (self.topNavView && [self.topNavView respondsToSelector:@selector(scrollViewDidEndScrollingAnimation:)]) {
+        [self.topNavView scrollViewDidEndScrollingAnimation:scrollView];
+    }
+}
+
+- (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView
+                         createNewVC:(BOOL)createNewVC
+{
+    //每页宽度
+    CGFloat pageWidth = scrollView.frame.size.width;
+    //根据当前的坐标与页宽计算当前页码
+    NSInteger currentPage = floor((scrollView.contentOffset.x - pageWidth/2)/pageWidth) + 1;
+    self.currentIndex = currentPage;
+    
+    if (createNewVC) {
+        [self createVcWithIndex:currentPage];
+    }
+    
+    if (self.topNavView) {
+        [self.topNavView scrollViewDidEndDecelerating:scrollView createNewVC:createNewVC];
+    }
+}
+
+@end

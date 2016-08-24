@@ -1,0 +1,39 @@
+//
+//  CommonConst.h
+//  YouAsk
+//
+//  Created by wangyangyang on 15/5/26.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#ifndef YouAsk_CommonConst_h
+#define YouAsk_CommonConst_h
+
+//-----------------------------------    通知常用配置   -------------------------------
+
+static NSString * const kStatusBarTappedNotification = @"statusBarTappedNotification";
+
+static NSString * const kShowAskReportRedBadgeNotification = @"showAskReportRedBadgeNotification";
+
+//用户登录状态改变
+static NSString * const kUserLoginStateChangeNotification = @"kUserLoginStateChangeNotification";
+
+//系统未读消息更新通知
+static NSString * const kSystemUnreadMessageCountChangeNotification = @"kSystemUnreadMessageCountChangeNotification";
+
+//首页邀请函和待回答数 有变化时候的更新
+static NSString * const kHomeAdvertisementUnreadCountChangeNotification = @"kHomeAdvertisementUnreadCountChangeNotification";
+
+//启动接口调用完成后调用
+static NSString * const kLoginCheckDoneNotification = @"kLoginCheckDoneNotification";
+
+//刷新问题的通知
+static NSString * const kAskDetailRefreshNotification = @"kAskDetailRefreshNotification";
+
+//申请认证成功
+static NSString * const kUserNotifyVerifyingNotification = @"kUserNotifyVerifyingNotification";
+
+//申请认证成功
+static NSString * const kAskEditMarkDeleteNotification = @"kAskEditMarkDeleteNotification";
+
+#endif

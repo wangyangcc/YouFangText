@@ -1,0 +1,23 @@
+//
+//  ScrollViewObject.h
+//  ScrollVCAndNavBar
+//
+//  Created by lcc on 14-3-3.
+//  Copyright (c) 2014年 lcc. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+#import "MMScrollViewObjectProtocol.h"
+
+@interface ScrollViewObject : NSObject <MMScrollViewObjectProtocol>
+
+//自定义扩展属性
+@property (strong, nonatomic) NSString *s_outLink;
+@property (strong, nonatomic) NSString *s_imgUrl;
+@property (strong, nonatomic) NSString *s_typed;
+
+@property (strong, nonatomic) NSString *s_isShow;
+
+@property (strong, nonatomic) NSString *s_cellString;
+
+@end

@@ -1,0 +1,453 @@
+//
+//  CommonDefine.h
+//  TWindowPhoneStyle
+//
+//  Created by Tiank on 13-5-3.
+//  Copyright (c) 2013年 lcc. All rights reserved.
+//
+
+#ifndef TWindowPhoneStyle_CommonDefine_h
+#define TWindowPhoneStyle_CommonDefine_h
+
+
+//------------------------- 系统公共 ---------------------------------------------
+
+#import "AppDelegate.h"
+#import "StatusBarObject.h"
+#import "CommonUrl.h"
+#import "PureLayout.h"
+#import "UALogger.h"
+#import "MMFontButton.h"
+#import "MMFontLabel.h"
+#import "NSObject+LogDealloc.h"
+#import "UIImageView+MMSDWebImageView.h"
+#import "UIButton+MMSDButtom.h"
+#import "MMAlertManage.h"
+#import "UIColor+HEXColor.h"
+#import "UIView+LayoutMethods.h"
+#import "MetaData.h"
+#import "SVProgressHUD.h"
+#import "UIViewController+Route.h"
+#import "CommonRoute.h"
+#import "CommonConst.h"
+#import "MMDebugMessage.h"
+
+#define MMAppDelegate ((AppDelegate*)[[UIApplication sharedApplication] delegate])
+#define IOS7AFTER  ([[UIDevice currentDevice] systemVersion].floatValue >= 7.0)
+#define IOS8AFTER  ([[UIDevice currentDevice] systemVersion].floatValue >= 8.0)
+#define CollectionCachePath [NSString stringWithFormat:@"%@/Documents/CollectionFile",NSHomeDirectory()]
+#define PicPath [NSString stringWithFormat:@"%@/Documents/Paike/",NSHomeDirectory()]
+#define ScreenHeight  (IOS7AFTER ? [[UIScreen mainScreen] bounds].size.height : [[UIScreen mainScreen] bounds].size.height - 20)
+#define ScreenWidth  [[UIScreen mainScreen] bounds].size.width
+#define ScreenWidthAdd  ([[UIScreen mainScreen] bounds].size.width - 320)
+#define MMStatusBarHeight (IOS7AFTER ? CGRectGetHeight([[UIApplication sharedApplication] statusBarFrame]) : CGRectGetHeight([[UIApplication sharedApplication] statusBarFrame]) - 20)
+#define MMNavigationBarHeight (44 + 20)
+#define MMTabBarHeight 49
+#define GaoDeSearchKey  @"29dac29730e959d44d440160b6017e28"
+
+//----------------------------end-------------------------------------------------
+
+#define MMFontName @"Helvetica Neue"
+
+//友盟等帐号
+#if IS_DEBUG_MODEL
+//测试环境 下面的
+    #define YouMengKey @"558a198367e58efd640096bf"
+    #define YouMengAnalyticsKey @"558a198367e58efd640096bf"
+
+    #define WeiChatKey @"wx32aaa8de0c3fd73f"
+    #define WeiChatSecretKey @"2da5ad24d394aa54d2b08af67747161f"
+    #define WeiChatPayAccount @"1267324101" //微信支付账户号
+    #define WeiChatPayPackage @"Sign=WXPay"
+    #define WeiChatPayAccountKey @"7l4vhb8juz9sg0783dsb84yt29r5c79q" //微信支付商户API密钥
+
+    //个推申请的相关数据
+    #define GeTuiAppId           @"UZKwCzVu4e7Wh7EctZ7zp8"
+    #define GeTuiAppKey          @"96ofXMHATd68dkK2jYK5n9"
+    #define GeTuiAppSecret       @"A6KWs9YWog9J0JU6Xszpj7"
+    //end
+#else
+//正式环境 下面的
+    #define YouMengKey @"55a63a2167e58e52d2003a30"
+    #define YouMengAnalyticsKey @"55a63a2167e58e52d2003a30"
+
+    #define WeiChatKey @"wx486dc7e60e56729d"
+    #define WeiChatSecretKey @"2a7a849a9972b6dbc9033a83c36b2708"
+    #define WeiChatPayAccount @"1267160001" //微信支付账户号
+    #define WeiChatPayPackage @"Sign=WXPay"
+    #define WeiChatPayAccountKey @"7l4vhb8juz9sg0783dsb84yt29r5c79q" //微信支付商户API密钥
+
+    //个推申请的相关数据
+    #define GeTuiAppId           @"RvLI0NAGlB8mwYRxhRVSA3"
+    #define GeTuiAppKey          @"NeigDoyT4y5L4jJbgcfCA7"
+    #define GeTuiAppSecret       @"ZHN0cjI0T57CN6bOiphRE"
+    //end
+#endif
+
+#define YouWenScheme    @"youwen"
+
+//end
+
+//分享平台渠道号  暂时未用到
+#define SHARE_CHANNEL              @"channel"
+#define CHANNEL_QQFRIEND           @"qq"
+#define CHANNEL_QQZONE             @"Qzone"
+#define CHANNEL_TENQ               @"tenq"
+#define CHANNEL_SMS                @"sms"
+#define CHANNEL_EMAIL              @"email"
+//分享平台渠道号  用到的
+#define CHANNEL_SINA               @"weibo"
+#define CHANNEL_WEIXIN_FRIEND      @"weixin.hy"
+#define CHANNEL_WEIXIN_TIMELINE    @"weixin.pyq"
+
+//客户端发布所在市场编号
+#define YA_APP_MARKET @"1"
+
+//-----------------------------------     end    -------------------------------
+
+//-----------------     end     -----------------
+
+#define PlaceHolderImg1_1 @"xinhua_placeHolderImg1-1"
+#define PlaceHolderImg5_3 @"xinhua_placeHolderImg4-3"
+#define PlaceHolderImgHome @"img_placeHolder_image2.5"
+#define PlaceHolderImgAnswer @"img_placeHolder_image1.6"
+#define PlaceHolderImgHeader @"img_placeHolder_userPhoto"
+
+#define TextDefaultErrorNetwork @"让你的网络飞一会~"
+#define TextDefaultNoData @"\n这里一点内容也没有"
+#define TextDefaultNoChat @"你已经和这个世界失联了~"
+
+//------------------------end-----------------------------
+
+typedef NS_ENUM(NSInteger, YANotificationListType) {
+    YANotificationListSystem = 0, /**< 系统通知 */
+    YANotificationListMessage = 1, /**< 消息 */
+    YANotificationListAward = 7, /**< 打赏 */
+};
+
+//--------------------------------end---------------------------------
+
+//------------------------------- 提示语 ----------------------------------
+
+//图文详情页面
+#define SucessCollection @"收藏成功"
+#define CancelCollection @"取消收藏成功"
+#define SuccessSaveImg @"已保存至相册"
+#define FailSaveImg @"保存失败"
+
+#define SucessComment  @"评论成功"
+#define DoneLoading @"加载完成"
+#define Committing @"提交中..."
+
+#define FailTip @"失败 再试一次"
+#define Loading @"加载中..."
+#define Loginning @"登录中..."
+#define TappedAgain @"点击屏幕 , 重新加载"
+#define NetFailTip @"请稍后重试"
+
+#define SendingCode @"验证已经发出"
+#define ErrorNo @"您输入的手机号有误"
+#define RegistAlready @"您的号码已经被注册了"
+#define NoPhoneNo @"请输入注册时用的手机号"
+#define Erroring @"异常信息"
+#define FindPasswordNull @"未发现该邮箱注册数据"
+
+#define SuccessLogin @"登录成功"
+#define NicknameNil @"您用户名是空哦"
+#define PswNil @"您忘了输入密码哦"
+#define NoInfo @"用户名或密码错误"
+#define PswCantChange @"密码修改失败"
+
+#define SuccessPassCode @"校验成功"
+#define CodeFailCompare @"验证码错误"
+#define CodeNil @"请输入验证码"
+#define ErrorCode @"验证码输入有误"
+#define SuccessRegist @"注册成功"
+#define Registing @"注册中..."
+#define PswLength @"密码位数要达到6位以上哦"
+#define EmailFormat @"邮箱格式不符合哦"
+#define EmailNill @"邮箱不能为空哦"
+#define RepeatNickname @"这个昵称很热，很多人都在用哦"
+#define RepeatEmail @"此邮箱已经被注册了，亲"
+#define SuccessPsw @"修改成功"
+#define SuccessAdvice @"反馈成功"
+#define SuccessUpload @"上传成功,待审核"
+#define TitleNil @"标题不能为空"
+#define ImageNil @"请选择图片"
+#define AlreadySent @"验证码已发"
+#define ChineseTip @"密码需要至少6个字符（字母、数字或下划线）"
+
+#define UploadingData @"上传中..."
+#define NNameChanging @"修改中..."
+#define ClearDone @"清理完成"
+#define CacheClearing @"缓存清理中..."
+
+#define Searching @"搜索中..."
+
+
+//--------------------------------end---------------------------------
+
+//------------------------------- 请求接口名 ----------------------------------
+
+//登陆
+#define USER_LOGIN_METHOD @"login/v1/goLogin"
+
+//启动接口
+#define APP_ACCESS_METHOD @"common/v1/access"
+
+//通知个推id
+#define NOTIFY_GETUIID_METHOD @"common/v1/notifyGtId"
+
+//每日签到
+#define USER_SIGNIN_METHOD @"home/v1/sign"
+
+//第三方登陆
+#define USER_OPENREGLOGIN_METHOD @"user/openreg"
+
+//注册
+#define USER_REGIST_METHOD @"login/v1/register"
+
+//修改密码
+#define USER_CHANGEPSWORD_METHOD @"login/v1/changePwd"
+
+//注册时 获取验证码
+#define USER_CODEREG_METHOD @"login/v1/getCodeReg"
+
+//修改密码时 获取验证码
+#define USER_CODERCP_METHOD @"login/v1/getCodeCp"
+
+//首页第一页接口
+#define HOME_INFO_METHOD @"home/v1/info"
+
+//首页加载更多接口
+#define HOME_MORE_METHOD @"home/v1/more"
+
+//评论列表
+#define COMMENT_LIST_METHOD @"answer/v1/getCommentList"
+
+//获取关注的用户列表
+#define FOCUS_LIST_METHOD @"common/v1/getFocusList"
+
+//邀请函列表
+#define HOME_INVITATIONINFO_METHOD @"home/v1/getInvitationInfo"
+
+//问题详情信息
+#define QUESTION_INFO_METHOD @"question/v1/info"
+
+//获取待回答的用户列表
+#define SCHEDULE_LIST_METHOD @"question/v1/getScheduleList"
+
+//问题详情 回答问题列表
+#define QUESTION_ANSWERLIST_METHOD @"question/v1/getAnswerList"
+
+//获取回答详情
+#define ANSWER_DETAIL_METHOD @"answer/v1/info"
+
+//提交昵称头像
+#define REGISTER_USERINFO_METHOD @"login/v1/setUserInfo"
+
+//提交评论或追问(追问就是一种有目标用户的特殊的评论)
+#define SUBMIT_COMMENT_METHOD @"answer/v1/submitComment"
+
+#define SUBMIT_ANSWER_METHOD @"question/v1/submitAnswer"
+
+//标签详情
+#define MARK_DETAIL_METHOD @"field/v1/info"
+
+//加载更多标签问题
+#define MARK_DETAILMORE_METHOD @"field/v1/more"
+
+//搜索标签
+#define MARK_SEARCH_METHOD @"ask/v1/searchFields"
+
+//搜索关注用户
+#define USER_SEARCH_METHOD @"common/v1/searchUsers"
+
+//获取问题的推荐标签
+#define RECOMMENDFIELDS_METHOD @"ask/v1/getRecommendedFields"
+
+//获取积分列表
+#define SCORE_LIST_METHOD @"common/v1/getScoreList"
+
+//设置问题悬赏积分
+#define SCORE_SET_METHOD @"question/v1/setScore"
+
+//删除某个回答
+#define DELETE_ANSWER_METHOD @"answer/v1/delete"
+
+//设置评论权限
+#define COMMENT_PERMISSION_METHOD @"answer/v1/setCommentPermission"
+
+//删除某个评论
+#define DELETE_COMMENT_METHOD @"answer/v1/deleteComment"
+
+//举报评论
+#define REPORT_COMMENT_METHOD @"answer/v1/reportComment"
+
+//提交提问
+#define SUBMIT_ASK_METHOD @"ask/v1/submit"
+
+//采纳某个回答
+#define ADOPT_ANSWER_METHOD @"answer/v1/adopt"
+
+//点赞回答
+#define PRAISE_ANSWER_METHOD @"answer/v1/zanAnswer"
+
+//点赞评论
+#define PRAISE_COMMENT_METHOD @"answer/v1/zanComment"
+
+//发起同问
+#define TOGETHER_QUESTION_METHOD @"question/v1/starQuestion"
+
+//获取TA的个人信息
+#define HECENTER_INFO_METHOD @"personal/v1/taInfo"
+
+//举报用户
+#define REPORT_USER_METHOD @"personal/v1/reportUser"
+
+//关注用户
+#define FOCUS_USER_METHOD @"common/v1/focusUser"
+
+//获取提问列表
+#define USER_QUESTIONLIST_METHOD @"personal/v1/getQuestionList"
+
+//获取同问列表
+#define USER_TOGETHERQUESTION_METHOD @"personal/v1/getStarQuestionList"
+
+//共同好友
+#define USER_SAMEFOCUSUSER_METHOD @"personal/v1/sameFocusUser"
+
+//获取用户的收藏列表
+#define USER_COLLECTIONLIST_METHOD @"personal/v1/getStarList"
+
+//获取回答列表
+#define USER_ANSWERLIST_METHOD @"personal/v1/getAnswerList"
+
+//提醒待回答的用户
+#define REMIND_INVITATION_METHOD @"question/v1/remind"
+
+//收藏回答
+#define COLLECTION_ANSWER_METHOD @"answer/v1/starAnswer"
+
+//邀请TA回答
+#define QUESTION_INVITEUSER_METHOD @"question/v1/inviteUsers"
+
+//创建打赏订单
+#define CREATEANSWER_REWARD_METHOD @"answer/v1/createAnswerReward"
+
+//获取未读回答列表
+#define NEED_ANSWERLIST_METHOD @"home/v1/getAnswerInfo"
+
+//获取自己的个人信息
+#define MEINFO_CENTER_METHOD @"personal/v1/myInfo"
+
+//获取自己的关注信息
+#define USER_FOCUS_METHOD @"personal/v1/myFocusInfo"
+
+//城市列表
+#define CITYLIST_METHOD @"common/v1/getCityList"
+
+//获取系统领域分类信息
+#define FIELDINFO_METHOD @"common/v1/getFieldInfo"
+
+//设置个人资料
+#define SETUSERINFO_METHOD @"personal/v1/setInfo"
+
+//设置稍后回答
+#define SCHEDULEANSWER_METHOD @"home/v1/schedule"
+
+//获取我的通知类消息
+#define NOTIFICATIONLIST_METHOD @"message/v1/getNotificationList"
+
+//获取我的邀请类消息
+#define NOTIINVATEMESSAGE_METHOD @"message/v1/getInvitationList"
+
+//获取我的追问类消息
+#define NOTICHASELIST_METHOD @"message/v1/getChaseNotificationList"
+
+//获取消息中心 新消息个数
+#define MESSAGECENTER_NEWCOUNT_METHOD @"message/v1/getNewCount"
+
+//获取问题列表
+#define GOANSWERLIST_METHOD @"find/v1/info"
+
+//用户退出登录
+#define USER_LOGINOUT_METHOD @"setup/v1/logout"
+
+//获取推送设置
+#define PUSHONOFF_METHOD @"setup/v1/getPushOnOff"
+
+//获取第三方账号绑定状态
+#define GETACCOUNTINFO_METHOD @"setup/v1/getOtherAccountInfo"
+
+//设置第三方账号绑定状态
+#define SETACCOUNTINFO_METHOD @"setup/v1/bindOtherAccount"
+
+//推送设置
+#define SETPUSHONOFF_METHOD @"setup/v1/setPushOnOff"
+
+//提交反馈
+#define FEEDBACK_METHOD @"setup/v1/feedback"
+
+//检查软件升级
+#define CHECKAPPUPDATE_METHOD @"common/v1/checkAppUpdate"
+
+//扫一扫
+#define SCANQRCODE_METHOD @"common/v1/scan"
+
+//问题分享统计
+#define SHAREQUESTIONNOTIFY_METHOD @"question/v1/notifyShare"
+
+//回答分享统计
+#define SHAREANSWERNOTIFY_METHOD @"answer/v1/notifyShare"
+
+//用户分享统计
+#define SHAREUSERNOTIFY_METHOD @"personal/v1/notifyShare"
+
+//准备打电话
+#define PREPARETOCALL_METHOD @"chat/v1/prepareToCall"
+
+//开始打电话
+#define CALLING_METHOD @"chat/v1/call"
+
+//获取语音通话列表
+#define VOICECALLLIST_METHOD @"chat/v1/getVoiceCallList"
+
+//获取用户列表信息
+#define GETUSERLIST_METHOD @"chat/v1/getUserList"
+
+//校验进入热点群聊
+#define CHECKHOTSPOT_METHOD @"home/v1/checkHotspotGroup"
+
+//意见反馈
+#define ADVICE_BACK_METHOD @"user/feedback"
+
+//调试信息上传
+#define DEVICE_LOG_METHOD @"common/v1/deviceLog"
+
+//文件上传
+#define FILE_UPLOAD @"common/v1/fileUpload"
+
+//--------------------------------end---------------------------------
+
+#define YANavbackcolor [UIColor colorWithHexString:@"#1e2c3e"]
+#define YATabbarColor [UIColor colorWithHexString:@"#5a8fd4"]
+#define MMTitleLineSpacing 4
+
+#define MMDLog(...) NSLog(...)
+
+#define YAImageStretchInsets(name,capInsets) [[UIImage imageNamed:name] imageWithAlignmentRectInsets:capInsets]
+#define YAWhiteButtonBlImage [[UIImage imageNamed:@"bg_whiteBox"] stretchableImageWithLeftCapWidth:5 topCapHeight:5]
+#define YABlueButtonBlImage [[UIImage imageNamed:@"bg_blue"] stretchableImageWithLeftCapWidth:25 topCapHeight:25]
+#define YABlueBigBlImage [UIImage imageNamed:@"bg_blueBig"]
+
+#define YAViewControllerGrayBl [UIColor colorWithHexString:@"#f4f4f6"]
+#define YABlackColor [UIColor colorWithHexString:@"#323232"]
+#define MMRGBColor(r,g,b) [UIColor colorWithRed:r/255.0 green:g/255.0 blue:b/255.0 alpha:1]
+#define MMGrayBackground [[UIImage imageNamed:@"img_greyBl"] stretchableImageWithLeftCapWidth:2 topCapHeight:2]
+
+#define DescriptionLineSpacing 5
+
+#define MMDebugLogWithContent(name)  [[MMDebugMessage shareHelper] logWithContent:name]
+
+#endif

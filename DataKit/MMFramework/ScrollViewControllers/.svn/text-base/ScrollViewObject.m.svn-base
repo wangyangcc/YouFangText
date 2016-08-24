@@ -1,0 +1,21 @@
+//
+//  ScrollViewObject.m
+//  ScrollVCAndNavBar
+//
+//  Created by lcc on 14-3-3.
+//  Copyright (c) 2014年 lcc. All rights reserved.
+//
+
+#import "ScrollViewObject.h"
+
+@implementation ScrollViewObject
+@synthesize s_id;
+@synthesize s_titleWidth;
+@synthesize s_title;
+@synthesize s_keyString;
+@synthesize s_vcType;
+
+@synthesize s_normalImage;
+@synthesize s_selectImage;
+
+@end

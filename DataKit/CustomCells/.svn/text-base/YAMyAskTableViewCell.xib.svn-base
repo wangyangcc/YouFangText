@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="7706" systemVersion="14E46" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES">
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="7703"/>
+        <capability name="Constraints to layout margins" minToolsVersion="6.0"/>
+    </dependencies>
+    <objects>
+        <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner"/>
+        <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
+        <tableViewCell contentMode="scaleToFill" selectionStyle="default" indentationWidth="10" reuseIdentifier="YAMyAskTableViewCell" id="KGk-i7-Jjw" customClass="YAMyAskTableViewCell">
+            <rect key="frame" x="0.0" y="0.0" width="320" height="70"/>
+            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+            <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="KGk-i7-Jjw" id="H2p-sc-9uM">
+                <rect key="frame" x="0.0" y="0.0" width="320" height="43"/>
+                <autoresizingMask key="autoresizingMask"/>
+                <subviews>
+                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="问：中国股市牛市熊市都有什么特点？" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="CXU-QA-IaU">
+                        <rect key="frame" x="20" y="14" width="280" height="21"/>
+                        <fontDescription key="fontDescription" type="system" pointSize="16"/>
+                        <color key="textColor" red="0.15686274509803921" green="0.15686274509803921" blue="0.15686274509803921" alpha="1" colorSpace="calibratedRGB"/>
+                        <nil key="highlightedColor"/>
+                    </label>
+                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="已解决" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="IC2-Xu-Kly">
+                        <rect key="frame" x="20" y="42" width="80" height="21"/>
+                        <constraints>
+                            <constraint firstAttribute="width" constant="80" id="0Fn-bh-Y4H"/>
+                            <constraint firstAttribute="height" constant="21" id="1zT-83-UY8"/>
+                        </constraints>
+                        <fontDescription key="fontDescription" type="system" pointSize="13"/>
+                        <color key="textColor" cocoaTouchSystemColor="darkTextColor"/>
+                        <nil key="highlightedColor"/>
+                    </label>
+                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="回答数：23" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="adX-gc-hYm">
+                        <rect key="frame" x="123" y="42" width="177" height="21"/>
+                        <constraints>
+                            <constraint firstAttribute="height" constant="21" id="8pl-yK-7lm"/>
+                        </constraints>
+                        <fontDescription key="fontDescription" type="system" pointSize="13"/>
+                        <color key="textColor" red="0.60784313725490191" green="0.60784313725490191" blue="0.60784313725490191" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <nil key="highlightedColor"/>
+                    </label>
+                    <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="img_home_line.png" translatesAutoresizingMaskIntoConstraints="NO" id="6AP-f7-zja">
+                        <rect key="frame" x="10" y="68" width="300" height="1"/>
+                        <constraints>
+                            <constraint firstAttribute="height" constant="1" id="yor-at-urL"/>
+                        </constraints>
+                    </imageView>
+                </subviews>
+                <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="calibratedRGB"/>
+                <constraints>
+                    <constraint firstAttribute="bottomMargin" secondItem="6AP-f7-zja" secondAttribute="bottom" constant="-8" id="2IJ-Kl-kER"/>
+                    <constraint firstItem="adX-gc-hYm" firstAttribute="leading" secondItem="H2p-sc-9uM" secondAttribute="leadingMargin" constant="115" id="4x5-f5-LGY"/>
+                    <constraint firstItem="IC2-Xu-Kly" firstAttribute="top" secondItem="H2p-sc-9uM" secondAttribute="topMargin" constant="34" id="8ag-3X-gyP"/>
+                    <constraint firstItem="6AP-f7-zja" firstAttribute="leading" secondItem="H2p-sc-9uM" secondAttribute="leadingMargin" constant="2" id="KIe-MX-qii"/>
+                    <constraint firstItem="CXU-QA-IaU" firstAttribute="leading" secondItem="H2p-sc-9uM" secondAttribute="leadingMargin" constant="12" id="KkE-wF-JgD"/>
+                    <constraint firstItem="CXU-QA-IaU" firstAttribute="top" secondItem="H2p-sc-9uM" secondAttribute="topMargin" constant="6" id="Ua3-G1-yUF"/>
+                    <constraint firstAttribute="bottomMargin" secondItem="adX-gc-hYm" secondAttribute="bottom" constant="-2" id="UdY-rj-pjW"/>
+                    <constraint firstItem="IC2-Xu-Kly" firstAttribute="leading" secondItem="H2p-sc-9uM" secondAttribute="leadingMargin" constant="12" id="WhA-gg-KYR"/>
+                    <constraint firstAttribute="bottomMargin" secondItem="IC2-Xu-Kly" secondAttribute="bottom" constant="-2" id="bYg-my-r9C"/>
+                    <constraint firstAttribute="bottomMargin" secondItem="CXU-QA-IaU" secondAttribute="bottom" constant="26" id="lh5-VF-0zC"/>
+                    <constraint firstAttribute="trailingMargin" secondItem="6AP-f7-zja" secondAttribute="trailing" constant="2" id="p7b-64-dkI"/>
+                    <constraint firstAttribute="trailingMargin" secondItem="adX-gc-hYm" secondAttribute="trailing" constant="12" id="uxu-XX-4fU"/>
+                    <constraint firstAttribute="trailingMargin" secondItem="CXU-QA-IaU" secondAttribute="trailing" constant="12" id="zbk-vI-PCJ"/>
+                </constraints>
+                <variation key="default">
+                    <mask key="constraints">
+                        <exclude reference="8ag-3X-gyP"/>
+                    </mask>
+                </variation>
+            </tableViewCellContentView>
+            <connections>
+                <outlet property="ui_answerNumberLabel" destination="adX-gc-hYm" id="Ikq-uk-ClU"/>
+                <outlet property="ui_stateLabel" destination="IC2-Xu-Kly" id="ocG-mn-9sc"/>
+                <outlet property="ui_titleLabel" destination="CXU-QA-IaU" id="zMz-MO-amI"/>
+            </connections>
+            <point key="canvasLocation" x="272" y="243"/>
+        </tableViewCell>
+    </objects>
+    <resources>
+        <image name="img_home_line.png" width="1" height="1"/>
+    </resources>
+</document>

@@ -1,0 +1,27 @@
+//
+//  YALoginCheckHelper.h
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/26.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+
+@interface YALoginCheckHelper : NSObject
+
+@property (nonatomic, strong, readonly) NSMutableArray *invocationSucceedArrays;
+
+@property (nonatomic, strong, readonly) NSMutableArray *invocationFailArrays;
+
++ (YALoginCheckHelper *)shareHelper;
+
+@property (nonatomic, assign) BOOL isLoginChecked; /**< 表示是否进行过登录检查 */
+
+- (BOOL)isNeedLoginCheck;
+
+- (void)addOneSucceedInvocation:(NSInvocation *)oneInvocation;
+
+- (void)addOneFailInvocation:(NSInvocation *)oneInvocation;
+
+@end

@@ -1,0 +1,153 @@
+//
+//  CheckUpdateObject.m
+//  SanMen
+//
+//  Created by lcc on 14-1-7.
+//  Copyright (c) 2014年 lcc. All rights reserved.
+//
+
+#import "CheckUpdateObject.h"
+
+@implementation CheckUpdateObject
+
+- (id)init
+{
+    self = [super init];
+    if (self) {
+        self.myRequest = [[CCClientRequest alloc] init];
+        self.myRequest.c_delegate = self;
+        
+        [self performSelector:@selector(check) withObject:nil afterDelay:8];
+    }
+    return self;
+}
+
+#pragma mark -
+#pragma mark - custom method
+
+- (void) check
+{
+
+}
+
+#pragma mark -
+#pragma mark - 网络数据放回
+//版本更新
+- (void) checkversionCallBack:(id) objectData
+{
+    if ([objectData count] > 0)
+    {
+        @try
+        {
+            NSDictionary *tmpDic = [objectData objectAtIndex:0];
+            NSUserDefaults *tmpUser = [NSUserDefaults standardUserDefaults];
+            [tmpUser setValue:tmpDic forKey:VERINFO];
+            
+            //更新状态
+            NSString *updateStatus = [NSString stringWithFormat:@"%@",[tmpDic objectForKey:@"viUpdateState"]];
+            
+            //选择更新
+            if ([updateStatus isEqualToString:@"1"])
+            {
+                
+                [self showAlertWithMessage:[tmpDic objectForKey:@"viContent"] title:[tmpDic objectForKey:@"viTitle"] tag:2 cancelString:@"立即更新" sureString:@"稍后再说"];
+                
+            }
+            
+            //强制更新
+            if ([updateStatus isEqualToString:@"2"])
+            {
+                [self showAlertWithMessage:[tmpDic objectForKey:@"viContent"] title:[tmpDic objectForKey:@"viTitle"] tag:1 cancelString:nil sureString:@"确定"];
+            }
+        }
+        @catch (NSException *exception)
+        {
+            
+        }
+        
+    }
+}
+
+#pragma mark -
+#pragma mark - alert Custom method
+- (void) showAlertWithMessage:(NSString *) message title:(NSString *) titleString tag:(NSInteger) tag cancelString:(NSString *) cancelString sureString:(NSString *) sureString
+{
+    UIAlertView *tmpAlertView = [[UIAlertView alloc] initWithTitle:titleString
+                                                           message:message
+                                                          delegate:self
+                                                 cancelButtonTitle:sureString
+                                                 otherButtonTitles:cancelString, nil];
+    
+    tmpAlertView.tag = tag;
+    
+    //如果你的系统大于等于7.0
+    if (floor(NSFoundationVersionNumber) > NSFoundationVersionNumber_iOS_6_1)
+    {
+        CGSize size = [message sizeWithFont:[UIFont systemFontOfSize:15] constrainedToSize:CGSizeMake(230, 400) lineBreakMode:NSLineBreakByTruncatingTail];
+        
+        UILabel *textLabel = [[UILabel alloc] initWithFrame:CGRectMake(5, -20, 230, size.height)];
+        textLabel.font = [UIFont systemFontOfSize:15];
+        textLabel.textColor = [UIColor blackColor];
+        textLabel.backgroundColor = [UIColor clearColor];
+        textLabel.lineBreakMode = NSLineBreakByWordWrapping;
+        textLabel.numberOfLines = 0;
+        textLabel.textAlignment = NSTextAlignmentLeft;
+        textLabel.text = [NSString stringWithFormat:@" %@",message];
+        [tmpAlertView setValue:textLabel forKey:@"accessoryView"];
+        
+        //这个地方别忘了把alertview的message设为空
+        tmpAlertView.message = @"";
+    }
+    
+    [tmpAlertView show];
+}
+
+#pragma mark -
+#pragma mark - alertView delegate
+- (void) alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
+{
+    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    NSDictionary *infoDic = (NSDictionary *)[userDefaults objectForKey:VERINFO];
+    
+    if (alertView.tag == 1)
+    {
+        //强制更新
+        [[UIApplication sharedApplication] openURL:[NSURL URLWithString:[infoDic objectForKey:@"downUrl"]]];
+        _exit(0);
+    }
+    else if(alertView.tag == 2)
+    {
+        if (buttonIndex == 1)
+        {
+            [[UIApplication sharedApplication] openURL:[NSURL URLWithString:[infoDic objectForKey:@"downUrl"]]];
+        }
+    }
+    
+}
+
+#pragma mark -
+#pragma mark - alert delegate
+- (void) willPresentAlertView:(UIAlertView *)alertView
+{
+    //由于不希望标题也居左
+    NSInteger labelIndex = 1;
+    //在ios7.0一下版本这个方法是可以的
+    for (UIView *subView in alertView.subviews)
+    {
+        if (floor(NSFoundationVersionNumber) <= NSFoundationVersionNumber_iOS_6_1)
+        {
+            if ([subView isKindOfClass: [UILabel class]])
+            {
+                if (labelIndex > 1)
+                {
+                    UILabel *tmpLabel = (UILabel *)subView;
+                    tmpLabel.textAlignment = NSTextAlignmentLeft;
+                }
+                //过滤掉标题
+                labelIndex ++;
+            }
+        }
+    }
+}
+
+@end

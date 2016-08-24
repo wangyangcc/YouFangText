@@ -1,0 +1,213 @@
+//
+//  MMClientRequest.m
+//  YouAsk
+//
+//  Created by wangyangyang on 15/6/23.
+//  Copyright (c) 2015年 wang yangyang. All rights reserved.
+//
+
+#import "MMClientRequest.h"
+#import "MetaData.h"
+#import "NetWorkObserver.h"
+#import "CCParseToObjectToDatabase.h"
+#import "NSString+URLEncoding.h"
+#import <CoreTelephony/CTCarrier.h>
+#import <CoreTelephony/CTTelephonyNetworkInfo.h>
+#import <CommonCrypto/CommonDigest.h>
+#import "NSString+URLEncoding.h"
+#import "FMDBManage.h"
+
+//刷新时间
+#define FreshTimeTypeOne 0
+#define FreshTimeTypeTwo 0
+
+@interface MMClientRequest()
+
+@property (nonatomic, strong) MMDataParseSuper *superRequest;
+/**
+ *  请求的方法名
+ */
+@property (nonatomic, strong) NSString *requestMethodName;
+
+/**
+ *  请求得到的结果，默认空，接口请求正常时，不为空
+ */
+@property (nonatomic, strong) id responseObject;
+
+/**
+ *  错误结果对象，默认空，接口返回错误时，不为空
+ */
+@property (nonatomic, strong) NSError *errorObject;
+
+@end
+
+@implementation MMClientRequest
+
+- (void)dealloc
+{
+    [self.superRequest setM_delegate:nil];
+    self.superRequest = nil;
+}
+
+- (id) init
+{
+    self = [super init];
+    
+    if (self)
+    {
+        self.superRequest = [[MMDataParseSuper alloc] init];
+        self.superRequest.parseToObject = [[CCParseToObjectToDatabase alloc] init];
+        [self.superRequest setM_delegate:self];
+        
+    }
+    
+    return self;
+}
+
+
+#pragma mark -
+#pragma mark - MMClientRequestDelegate
+
+- (void) finishLoadDataCallBack:(NSString *) methodName loadingData:(id) objectData
+{
+    self.errorObject = nil;
+    self.responseObject = objectData;
+    
+    if (self.c_delegate == nil) {
+        NSLog(@"MMClientRequest----c_delegate----为空");
+    }
+    
+    @try {
+        //代理回调
+        if ([self.c_delegate respondsToSelector:@selector(requestDidSuccessCallBack:)]) {
+            [self.c_delegate requestDidSuccessCallBack:self];
+        }
+    }
+    @catch (NSException *exception) {
+        UALog(@"%@----------解析失败",methodName);
+        [self failLoadData:@"请稍后重试"];
+    }
+}
+
+/**
+ *  对于缓存策略为 MMRequestReturnCacheDataWhenFailed 的回调方法
+ *
+ */
+- (void) failLoadCacheCallBack:(NSString *) methodName cacheData:(id) cacheData
+{
+    self.errorObject = nil;
+    self.responseObject = cacheData;
+    
+    if (self.c_delegate == nil) {
+        NSLog(@"MMClientRequest----c_delegate----为空");
+    }
+    
+    @try {
+        //代理回调
+        if ([self.c_delegate respondsToSelector:@selector(requestLoadCacheCallBack:cachePolicy:)]) {
+            [self.c_delegate requestLoadCacheCallBack:self cachePolicy:MMRequestReturnCacheDataWhenFailed];
+        }
+    }
+    @catch (NSException *exception) {
+        UALog(@"%@----------解析失败",methodName);
+        [self failLoadData:@"请稍后重试"];
+    }
+}
+
+/**
+ *  对于缓存策略为 MMRequestReturnCacheDataDontLoad 的回调方法
+ *
+ */
+- (void)nontLoadCacheCallBack:(NSString *) methodName cacheData:(id) cacheData
+{
+    self.errorObject = nil;
+    self.responseObject = cacheData;
+    
+    if (self.c_delegate == nil) {
+        NSLog(@"MMClientRequest----c_delegate----为空");
+    }
+    
+    @try {
+        //代理回调
+        if ([self.c_delegate respondsToSelector:@selector(requestLoadCacheCallBack:cachePolicy:)]) {
+            [self.c_delegate requestLoadCacheCallBack:self cachePolicy:MMRequestReturnCacheDataDontLoad];
+        }
+    }
+    @catch (NSException *exception) {
+        UALog(@"%@----------解析失败",methodName);
+        [self failLoadData:@"请稍后重试"];
+    }
+}
+
+/**
+ *  对于缓存策略为 MMRequestReturnCacheDataElseLoad 的回调方法
+ *
+ */
+- (void)beforeLoadCacheCallBack:(NSString *) methodName cacheData:(id) cacheData
+{
+    self.errorObject = nil;
+    self.responseObject = cacheData;
+    
+    if (self.c_delegate == nil) {
+        NSLog(@"MMClientRequest----c_delegate----为空");
+    }
+    
+    @try {
+        //代理回调
+        if ([self.c_delegate respondsToSelector:@selector(requestLoadCacheCallBack:cachePolicy:)]) {
+            [self.c_delegate requestLoadCacheCallBack:self cachePolicy:MMRequestReturnCacheDataElseLoad];
+        }
+    }
+    @catch (NSException *exception) {
+        UALog(@"%@----------解析失败",methodName);
+        [self failLoadData:@"请稍后重试"];
+    }
+}
+
+/**
+ *  正常网络请求，请求失败后调用，用户兼容老的版本
+ *
+ */
+- (void)failLoadData:(id) reasonString
+{
+    if (reasonString == nil || [(NSString *)reasonString length] <= 0) {
+        reasonString = NetFailTip;
+    }
+    self.errorObject = [NSError errorWithDomain:reasonString code:-1 userInfo:nil];
+    self.responseObject = nil;
+    
+    if (self.c_delegate == nil) {
+        NSLog(@"MMClientRequest----c_delegate----为空");
+    }
+    
+    if (self.c_delegate != nil && [self.c_delegate respondsToSelector:@selector(failLoadData:)])
+    {
+        [self.c_delegate performSelector:@selector(failLoadData:) withObject:reasonString];
+    }
+}
+
+/**
+ *  正常网络请求，请求失败后调用，新的版本使用，加了请求方法名回调
+ *
+ */
+- (void)failLoadData:(NSString *) methodName reasonError:(NSError *) reasonError
+{
+    if (reasonError == nil || reasonError.domain == nil || [reasonError.domain isEqualToString:@"无法创建对象"]) {
+        reasonError = [NSError errorWithDomain:NetFailTip code:-1 userInfo:nil];
+    }
+    self.errorObject = reasonError;
+    self.responseObject = nil;
+    
+    @try {
+        //代理回调，兼容老版本的错误返回方法
+        if ([self.c_delegate respondsToSelector:@selector(requestDidFailCallBack:)]) {
+            [self.c_delegate requestDidFailCallBack:self];
+        };
+    }
+    @catch (NSException *exception) {
+        UALog(@"%@----------解析失败",methodName);
+        [self failLoadData:@"请稍后重试"];
+    }
+}
+
+@end
